@@ -335,27 +335,27 @@ export function TaskModal() {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-3">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
               {currentTask ? (isEditing ? 'Editar Tarefa' : 'Detalhes da Tarefa') : 'Nova Tarefa'}
             </h2>
             {currentTask && !isEditing && (
               <button
                 onClick={() => setIsEditing(true)}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
               >
-                <Edit3 className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                <Edit3 className="w-4 h-4 text-slate-600 dark:text-slate-300" />
               </button>
             )}
           </div>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            <X className="w-5 h-5 text-slate-600 dark:text-slate-300" />
           </button>
         </div>
 
@@ -366,28 +366,28 @@ export function TaskModal() {
               <div className="space-y-4">
                 {/* Title */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Título *
                   </label>
                   <input
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                     placeholder="Digite o título da tarefa"
                   />
                 </div>
 
                 {/* Description */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Descrição
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                     placeholder="Descreva a tarefa"
                   />
                 </div>
@@ -395,13 +395,13 @@ export function TaskModal() {
                 {/* Row 1: Status, Priority, Type */}
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                       Status
                     </label>
                     <select
                       value={formData.status}
                       onChange={(e) => setFormData({ ...formData, status: e.target.value as TaskStatus })}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                     >
                       <option value="para_fazer">Para Fazer</option>
                       <option value="fazendo">Fazendo</option>
@@ -412,13 +412,13 @@ export function TaskModal() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                       Prioridade
                     </label>
                     <select
                       value={formData.priority}
                       onChange={(e) => setFormData({ ...formData, priority: e.target.value as TaskPriority })}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                     >
                       <option value="baixa">Baixa</option>
                       <option value="media">Média</option>
@@ -428,13 +428,13 @@ export function TaskModal() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                       Tipo
                     </label>
                     <select
                       value={formData.type}
                       onChange={(e) => setFormData({ ...formData, type: e.target.value as TaskType })}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                     >
                       <option value="tarefa">Tarefa</option>
                       <option value="evento">Evento</option>
@@ -445,7 +445,7 @@ export function TaskModal() {
                 {/* Row 2: Date and Time */}
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                       {currentTask && isExtending ? 'Nova Data de Vencimento (Prorrogação)' : 'Data de Vencimento'}
                     </label>
                     <input
@@ -453,14 +453,14 @@ export function TaskModal() {
                       lang="pt-BR"
                       value={formData.dueDate}
                       onChange={(e) => handleDateChange(e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white ${
                         isExtending 
                           ? 'border-orange-300 dark:border-orange-600 bg-orange-50 dark:bg-orange-900/20' 
-                          : 'border-gray-300 dark:border-gray-600'
+                          : 'border-slate-300 dark:border-slate-600'
                       }`}
                     />
                     {currentTask && currentTask.dueDate && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <p className="text-xs text-slate-500 dark:text-slate-300 mt-1">
                         Data atual: {formatDateForDisplay(currentTask.dueDate)}
                       </p>
                     )}
@@ -469,26 +469,26 @@ export function TaskModal() {
                   {formData.type === 'evento' && (
                     <>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                           Hora de Início
                         </label>
                         <input
                           type="time"
                           value={formData.startTime}
                           onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                           Hora de Fim
                         </label>
                         <input
                           type="time"
                           value={formData.endTime}
                           onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                         />
                       </div>
                     </>
@@ -512,7 +512,7 @@ export function TaskModal() {
                         value={extensionReason}
                         onChange={(e) => setExtensionReason(e.target.value)}
                         placeholder="Descreva o motivo da prorrogação..."
-                        className="w-full px-3 py-2 border border-orange-300 dark:border-orange-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+                        className="w-full px-3 py-2 border border-orange-300 dark:border-orange-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white resize-none"
                         rows={3}
                       />
                     </div>
@@ -524,13 +524,13 @@ export function TaskModal() {
 
                 {/* Client */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Cliente
                   </label>
                   <select
                     value={formData.clientId}
                     onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                   >
                     <option value="">Selecione um cliente</option>
                     {clients.map(client => (
@@ -548,9 +548,9 @@ export function TaskModal() {
                     id="isVisibleToAll"
                     checked={formData.isVisibleToAll}
                     onChange={(e) => setFormData({ ...formData, isVisibleToAll: e.target.checked })}
-                    className="rounded border-gray-300 dark:border-gray-600"
+                    className="rounded border-slate-300 dark:border-slate-600"
                   />
-                  <label htmlFor="isVisibleToAll" className="text-sm text-gray-700 dark:text-gray-300">
+                  <label htmlFor="isVisibleToAll" className="text-sm text-slate-700 dark:text-slate-300">
                     Visível para todos
                   </label>
                 </div>
@@ -566,7 +566,7 @@ export function TaskModal() {
                   </button>
                   <button
                     onClick={() => currentTask ? setIsEditing(false) : handleClose()}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    className="px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                   >
                     Cancelar
                   </button>
@@ -576,11 +576,11 @@ export function TaskModal() {
               <div className="space-y-6">
                 {/* Task Info */}
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                  <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">
                     {currentTask.title}
                   </h3>
                   {currentTask.description && (
-                    <p className="text-gray-600 dark:text-gray-400">
+                    <p className="text-slate-600 dark:text-slate-300">
                       {currentTask.description}
                     </p>
                   )}
@@ -590,16 +590,16 @@ export function TaskModal() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Status:</span>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{currentTask.status}</span>
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Status:</span>
+                      <span className="text-sm text-slate-600 dark:text-slate-300">{currentTask.status}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Prioridade:</span>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{currentTask.priority}</span>
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Prioridade:</span>
+                      <span className="text-sm text-slate-600 dark:text-slate-300">{currentTask.priority}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Tipo:</span>
-                      <span className="text-sm text-gray-600 dark:text-gray-400">{currentTask.type}</span>
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Tipo:</span>
+                      <span className="text-sm text-slate-600 dark:text-slate-300">{currentTask.type}</span>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -612,8 +612,8 @@ export function TaskModal() {
                       }
                     })() && (
                       <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                        <Calendar className="w-4 h-4 text-slate-400" />
+                        <span className="text-sm text-slate-600 dark:text-slate-300">
                           {(() => {
                             try {
                               const date = new Date(currentTask.dueDate);
@@ -627,8 +627,8 @@ export function TaskModal() {
                     )}
                     {currentTask.startTime && currentTask.endTime && (
                       <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                        <Clock className="w-4 h-4 text-slate-400" />
+                        <span className="text-sm text-slate-600 dark:text-slate-300">
                           {currentTask.startTime} - {currentTask.endTime}
                         </span>
                       </div>
@@ -639,13 +639,13 @@ export function TaskModal() {
                 {/* Subtasks */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-medium text-gray-900 dark:text-white">Subtarefas</h4>
+                    <h4 className="font-medium text-slate-900 dark:text-white">Subtarefas</h4>
                   </div>
                   <div className="space-y-3">
                     {currentTask.subtasks.map(subtask => (
                       <div key={subtask.id} className="space-y-2">
                         {/* Linha principal da subtarefa */}
-                        <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 group">
+                        <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 group">
                           <button
                             onClick={() => toggleSubtask(subtask.id)}
                             className="flex-shrink-0"
@@ -653,10 +653,10 @@ export function TaskModal() {
                             {subtask.completed ? (
                               <CheckCircle2 className="w-5 h-5 text-green-500" />
                             ) : (
-                              <Circle className="w-5 h-5 text-gray-400" />
+                              <Circle className="w-5 h-5 text-slate-400" />
                             )}
                           </button>
-                          <span className={`flex-1 text-sm ${subtask.completed ? 'line-through text-gray-500' : 'text-gray-900 dark:text-white'}`}>
+                          <span className={`flex-1 text-sm ${subtask.completed ? 'line-through text-slate-500' : 'text-slate-900 dark:text-white'}`}>
                             {subtask.title}
                           </span>
                           <div className="flex items-center gap-1">
@@ -665,7 +665,7 @@ export function TaskModal() {
                               className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded"
                               title="Adicionar/editar comentário"
                             >
-                              <MessageCircle className={`w-4 h-4 ${subtask.comment ? 'text-blue-500' : 'text-gray-500'}`} />
+                              <MessageCircle className={`w-4 h-4 ${subtask.comment ? 'text-blue-500' : 'text-slate-500'}`} />
                             </button>
                             <button
                               onClick={() => deleteSubtask(subtask.id)}
@@ -686,7 +686,7 @@ export function TaskModal() {
                                 value={subtaskCommentText}
                                 onChange={(e) => setSubtaskCommentText(e.target.value.slice(0, 70))}
                                 placeholder="Comentário da subtarefa (máx 70 caracteres)"
-                                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                className="flex-1 px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                                 maxLength={70}
                                 autoFocus
                                 onKeyPress={(e) => {
@@ -705,12 +705,12 @@ export function TaskModal() {
                               </button>
                               <button
                                 onClick={handleCancelSubtaskComment}
-                                className="px-3 py-2 text-sm bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                                className="px-3 py-2 text-sm bg-slate-500 text-white rounded-lg hover:bg-slate-600 transition-colors"
                               >
                                 Cancelar
                               </button>
                             </div>
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                            <div className="text-xs text-slate-500 dark:text-slate-300">
                               {subtaskCommentText.length}/70 caracteres
                             </div>
                           </div>
@@ -718,8 +718,8 @@ export function TaskModal() {
 
                         {/* Exibição do comentário (quando existe e não está editando) */}
                         {subtask.comment && editingSubtaskComment !== subtask.id && (
-                          <div className="ml-8 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <p className="text-sm text-gray-700 dark:text-gray-300 italic">
+                          <div className="ml-8 p-2 bg-slate-50 dark:bg-slate-700 rounded-lg">
+                            <p className="text-sm text-slate-700 dark:text-slate-300 italic">
                               "{subtask.comment}"
                             </p>
                           </div>
@@ -732,7 +732,7 @@ export function TaskModal() {
                         value={newSubtask}
                         onChange={(e) => setNewSubtask(e.target.value)}
                         placeholder="Nova subtarefa"
-                        className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        className="flex-1 px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                         onKeyPress={(e) => e.key === 'Enter' && handleAddSubtask()}
                       />
                       <button
@@ -751,20 +751,20 @@ export function TaskModal() {
 
           {/* Sidebar - Comments */}
           {currentTask && (
-            <div className="w-80 border-l border-gray-200 dark:border-gray-700 p-6 overflow-y-auto">
-              <h4 className="font-medium text-gray-900 dark:text-white mb-4">Comentários</h4>
+            <div className="w-80 border-l border-slate-200 dark:border-slate-700 p-6 overflow-y-auto">
+              <h4 className="font-medium text-slate-900 dark:text-white mb-4">Comentários</h4>
               
               <div className="space-y-4 mb-4">
                 {currentTask.comments.map(comment => (
-                  <div key={comment.id} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                  <div key={comment.id} className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-xs text-white font-medium">
                         {comment.author?.name?.charAt(0)?.toUpperCase() || '?'}
                       </div>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                      <span className="text-sm font-medium text-slate-900 dark:text-white">
                         {comment.author?.name || 'Usuário desconhecido'}
                       </span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                      <span className="text-xs text-slate-500 dark:text-slate-300">
                         {(() => {
                           try {
                             const date = new Date(comment.createdAt);
@@ -777,7 +777,7 @@ export function TaskModal() {
                         })()}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                    <p className="text-sm text-slate-700 dark:text-slate-300">
                       {comment.content}
                     </p>
                   </div>
@@ -790,7 +790,7 @@ export function TaskModal() {
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Adicionar comentário..."
                   rows={3}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
                 />
                 <button
                   onClick={handleAddComment}

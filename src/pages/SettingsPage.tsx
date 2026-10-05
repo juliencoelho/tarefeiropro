@@ -1,6 +1,6 @@
 import { SettingsPanel } from '../components/settings/SettingsPanel';
 
-export function SettingsPage() {
+function SettingsPage() {
   return (
     <div className="p-6">
       <div className="max-w-6xl mx-auto">
@@ -9,3 +9,5 @@ export function SettingsPage() {
     </div>
   );
 }
+
+export default SettingsPage;

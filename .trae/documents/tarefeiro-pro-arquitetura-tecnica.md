@@ -27,33 +27,41 @@ graph TD
 
 ## 2. Technology Description
 
-- Frontend: React@18 + TypeScript@5 + Vite@5 + TailwindCSS@3
-- Backend: Supabase (PostgreSQL + Auth + Storage + Real-time)
-- State Management: Zustand@4
-- Data Fetching: React Query@5
-- Drag & Drop: React Beautiful DnD@13
-- Date Management: date-fns@3
-- Icons: Lucide React@0.400
-- File Upload: React Dropzone@14
+* Frontend: React\@18 + TypeScript\@5 + Vite\@5 + TailwindCSS\@3
+
+* Backend: Supabase (PostgreSQL + Auth + Storage + Real-time)
+
+* State Management: Zustand\@4
+
+* Data Fetching: React Query\@5
+
+* Drag & Drop: React Beautiful DnD\@13
+
+* Date Management: date-fns\@3
+
+* Icons: Lucide React\@0.400
+
+* File Upload: React Dropzone\@14
 
 ## 3. Route definitions
 
-| Route | Purpose |
-|-------|---------|
-| / | Dashboard principal com visão geral e navegação |
-| /kanban | Visualização kanban com drag and drop |
-| /lista | Visualização em lista com filtros avançados |
-| /agenda | Agenda diária e semanal |
-| /tarefa/:id | Detalhes completos da tarefa |
-| /clientes | Gerenciamento de clientes |
-| /configuracoes | Configurações do usuário e sistema |
-| /login | Página de autenticação |
+| Route          | Purpose                                         |
+| -------------- | ----------------------------------------------- |
+| /              | Dashboard principal com visão geral e navegação |
+| /kanban        | Visualização kanban com drag and drop           |
+| /lista         | Visualização em lista com filtros avançados     |
+| /agenda        | Agenda diária e semanal                         |
+| /tarefa/:id    | Detalhes completos da tarefa                    |
+| /clientes      | Gerenciamento de clientes                       |
+| /configuracoes | Configurações do usuário e sistema              |
+| /login         | Página de autenticação                          |
 
 ## 4. API definitions
 
 ### 4.1 Core API
 
 **Autenticação (Supabase Auth)**
+
 ```typescript
 // Login
 supabase.auth.signInWithPassword({
@@ -70,6 +78,7 @@ supabase.auth.signUp({
 ```
 
 **Gerenciamento de Tarefas**
+
 ```typescript
 // Buscar tarefas
 GET /rest/v1/tasks
@@ -101,6 +110,7 @@ DELETE /rest/v1/tasks?id=eq.{id}
 ```
 
 **Gerenciamento de Subtarefas**
+
 ```typescript
 // Buscar subtarefas
 GET /rest/v1/subtasks?task_id=eq.{task_id}
@@ -116,6 +126,7 @@ Body: {
 ```
 
 **Sistema de Comentários**
+
 ```typescript
 // Buscar comentários
 GET /rest/v1/comments?task_id=eq.{task_id}
@@ -131,6 +142,7 @@ Body: {
 ```
 
 **Upload de Arquivos**
+
 ```typescript
 // Upload de anexo
 POST /storage/v1/object/task-attachments/{task_id}/{filename}
@@ -228,6 +240,7 @@ erDiagram
 ### 5.2 Data Definition Language
 
 **Tabela de Usuários (users)**
+
 ```sql
 -- Estende a tabela auth.users do Supabase
 CREATE TABLE public.user_profiles (
@@ -250,6 +263,7 @@ GRANT ALL PRIVILEGES ON user_profiles TO authenticated;
 ```
 
 **Tabela de Clientes (clients)**
+
 ```sql
 CREATE TABLE clients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -277,6 +291,7 @@ GRANT ALL PRIVILEGES ON clients TO authenticated;
 ```
 
 **Tabela de Tarefas (tasks)**
+
 ```sql
 CREATE TABLE tasks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -313,6 +328,7 @@ GRANT ALL PRIVILEGES ON tasks TO authenticated;
 ```
 
 **Tabela de Subtarefas (subtasks)**
+
 ```sql
 CREATE TABLE subtasks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -350,6 +366,7 @@ GRANT ALL PRIVILEGES ON subtasks TO authenticated;
 ```
 
 **Tabela de Comentários (comments)**
+
 ```sql
 CREATE TABLE comments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -389,6 +406,7 @@ GRANT ALL PRIVILEGES ON comments TO authenticated;
 ```
 
 **Tabela de Anexos (attachments)**
+
 ```sql
 CREATE TABLE attachments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -426,6 +444,7 @@ GRANT ALL PRIVILEGES ON attachments TO authenticated;
 ```
 
 **Dados Iniciais**
+
 ```sql
 -- Inserir status padrão se necessário
 INSERT INTO tasks (title, description, status, created_by) VALUES
@@ -448,3 +467,4 @@ CREATE TRIGGER update_tasks_updated_at BEFORE UPDATE ON tasks FOR EACH ROW EXECU
 CREATE TRIGGER update_subtasks_updated_at BEFORE UPDATE ON subtasks FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_comments_updated_at BEFORE UPDATE ON comments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 ```
+

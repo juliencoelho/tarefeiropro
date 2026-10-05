@@ -157,10 +157,10 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, size = 120 }: Avat
             <img
               src={currentAvatar}
               alt="Avatar"
-              className="w-full h-full rounded-full object-cover border-2 border-gray-200 dark:border-gray-600"
+              className="w-full h-full rounded-full object-cover border-2 border-slate-200 dark:border-slate-600"
             />
           ) : (
-            <div className="w-full h-full bg-blue-500 rounded-full flex items-center justify-center text-white text-2xl font-semibold border-2 border-gray-200 dark:border-gray-600">
+            <div className="w-full h-full bg-blue-500 rounded-full flex items-center justify-center text-white text-2xl font-semibold border-2 border-slate-200 dark:border-slate-600">
               <Camera className="w-8 h-8" />
             </div>
           )}
@@ -211,22 +211,22 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, size = 120 }: Avat
       {/* Modal de Recorte */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-auto">
+          <div className="bg-white dark:bg-slate-800 rounded-lg max-w-2xl w-full max-h-[90vh] overflow-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
                   Ajustar Foto do Avatar
                 </h3>
                 <button
                   onClick={handleCancel}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  <X className="w-5 h-5 text-slate-500" />
                 </button>
               </div>
 
               <div className="space-y-4">
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-slate-600 dark:text-slate-300">
                   Arraste para reposicionar e redimensione a área selecionada para escolher a parte da foto que será usada como avatar.
                 </p>
 
@@ -251,10 +251,10 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, size = 120 }: Avat
                   </div>
                 )}
 
-                <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-600">
+                <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-600">
                   <button
                     onClick={handleCancel}
-                    className="flex items-center gap-2 px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
                   >
                     <RotateCcw className="w-4 h-4" />
                     Cancelar
@@ -263,7 +263,7 @@ export function AvatarUpload({ currentAvatar, onAvatarChange, size = 120 }: Avat
                   <button
                     onClick={handleSaveAvatar}
                     disabled={isLoading || !completedCrop}
-                    className="flex items-center gap-2 px-6 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white rounded-lg transition-colors"
+                    className="flex items-center gap-2 px-6 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-400 text-white rounded-lg transition-colors"
                   >
                     <Check className="w-4 h-4" />
                     {isLoading ? 'Processando...' : 'Salvar Avatar'}

@@ -4,6 +4,11 @@ type Theme = 'light' | 'dark';
 
 export function useTheme() {
   const [theme, setTheme] = useState<Theme>(() => {
+    // Verificar se estamos no lado do cliente
+    if (typeof window === 'undefined') {
+      return 'light';
+    }
+    
     const savedTheme = localStorage.getItem('theme') as Theme;
     if (savedTheme) {
       return savedTheme;
@@ -26,4 +31,4 @@ export function useTheme() {
     toggleTheme,
     isDark: theme === 'dark'
   };
-} 
+}

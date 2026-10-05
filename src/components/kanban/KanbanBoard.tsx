@@ -8,8 +8,8 @@ import { Plus } from 'lucide-react';
 const statusConfig = {
   para_fazer: {
     title: 'Para Fazer',
-    color: 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50',
-    headerColor: 'text-gray-700 dark:text-gray-300'
+    color: 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/50',
+    headerColor: 'text-slate-700 dark:text-slate-300'
   },
   fazendo: {
     title: 'Fazendo',
@@ -71,10 +71,10 @@ export function KanbanBoard() {
                 className={`flex-shrink-0 rounded-lg border-2 ${config.color}`}
                 style={{ width: `${columnWidth}px` }}
               >
-                <div className={`p-4 border-b border-gray-200 dark:border-gray-700 ${config.headerColor}`}>
+                <div className={`p-4 border-b border-slate-200 dark:border-slate-700 ${config.headerColor}`}>
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold">{config.title}</h3>
-                    <span className="bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-1 rounded-full text-sm">
+                    <span className="bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-full text-sm">
                       {statusTasks.length}
                     </span>
                   </div>
@@ -109,7 +109,7 @@ export function KanbanBoard() {
                       {provided.placeholder}
                       
                       {statusTasks.length === 0 && (
-                        <div className="text-center text-gray-400 dark:text-gray-600 py-8">
+                        <div className="text-center text-slate-400 dark:text-slate-400 py-8">
                           <Plus className="w-8 h-8 mx-auto mb-2 opacity-50" />
                           <p className="text-sm">Arraste tarefas aqui</p>
                         </div>

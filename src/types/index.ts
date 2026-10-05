@@ -14,6 +14,109 @@ export interface User {
   phone?: string;
   bio?: string;
   role: 'admin' | 'user';
+  // Campos para gestão avançada
+  isOnline?: boolean;
+  lastLogin?: Date;
+  lastActivity?: Date;
+  approved?: boolean;
+  approvedBy?: string; // ID do admin que aprovou
+  approvedAt?: Date;
+  rejectedAt?: Date; // Data de rejeição
+  rejectedBy?: string; // ID do admin que rejeitou
+  rejectionReason?: string; // Motivo da rejeição
+  createdAt?: Date;
+  updatedAt?: Date;
+  // Estatísticas de produtividade
+  stats?: UserStats;
+  // Preferências do usuário
+  preferences?: UserPreferences;
+}
+
+export interface UserStats {
+  totalTasks: number;
+  completedTasks: number;
+  pendingTasks: number;
+  overdueTasks: number;
+  averageCompletionTime: number; // em horas
+  productivityScore: number; // 0-100
+  lastWeekTasks: number;
+  lastMonthTasks: number;
+}
+
+export interface UserPreferences {
+  emailNotifications: boolean;
+  mentionNotifications: boolean;
+  taskNotifications: boolean;
+  reportNotifications: boolean;
+  approvalNotifications: boolean;
+  systemNotifications: boolean;
+  theme: 'light' | 'dark' | 'auto';
+  language: 'pt-BR' | 'en-US';
+  timezone: string;
+}
+
+export interface UserInvite {
+  id: string;
+  email: string;
+  role: 'admin' | 'user';
+  invitedBy: string; // ID do usuário que enviou o convite
+  invitedAt: Date;
+  token: string;
+  expiresAt: Date;
+  acceptedAt?: Date;
+  createdAt: Date;
+  status: 'pending' | 'accepted' | 'expired' | 'cancelled';
+  message?: string;
+}
+
+export type NotificationType = 
+  | 'task_assigned' 
+  | 'task_completed' 
+  | 'task_commented' 
+  | 'user_mentioned' 
+  | 'user_invited' 
+  | 'user_approved' 
+  | 'user_rejected'
+  | 'approval'
+  | 'rejection'
+  | 'system_update'
+  | 'report_ready';
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  data?: Record<string, any>; // Dados específicos da notificação
+  read: boolean;
+  createdAt: Date;
+  readAt?: Date;
+  actionUrl?: string; // URL para ação relacionada
+}
+
+export interface UserSession {
+  id: string;
+  userId: string;
+  startTime: Date;
+  endTime?: Date;
+  ipAddress?: string;
+  userAgent?: string;
+  isActive: boolean;
+}
+
+export interface UserFilter {
+  search?: string;
+  role?: 'admin' | 'user' | 'all';
+  status?: 'online' | 'offline' | 'all' | 'approved' | 'pending' | 'rejected';
+  onlineStatus?: 'all' | 'online' | 'offline';
+  approved?: boolean | 'all';
+  dateRange?: {
+    start: Date;
+    end: Date;
+  };
+  sortBy?: 'name' | 'email' | 'lastLogin' | 'createdAt' | 'role';
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface Client {

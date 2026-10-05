@@ -140,18 +140,18 @@ export function TaskList() {
       case 'alta': return 'bg-orange-500';
       case 'media': return 'bg-yellow-500';
       case 'baixa': return 'bg-green-500';
-      default: return 'bg-gray-500';
+      default: return 'bg-slate-500';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'para_fazer': return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+      case 'para_fazer': return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300';
       case 'fazendo': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
       case 'aguardando_retorno': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
       case 'feito': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
       case 'longo_prazo': return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+      default: return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300';
     }
   };
 
@@ -178,10 +178,10 @@ export function TaskList() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
             Lista de Tarefas
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-slate-600 dark:text-slate-300">
             {activeTasks.length + completedTasks.length} de {tasks.length} tarefas
           </p>
         </div>
@@ -198,13 +198,13 @@ export function TaskList() {
       <div className="space-y-4">
         {/* Search Bar */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
           <input
             type="text"
             placeholder="Buscar tarefas..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+            className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
           />
         </div>
 
@@ -212,7 +212,7 @@ export function TaskList() {
         <div className="flex items-center gap-4">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
           >
             <Filter className="w-4 h-4" />
             Filtros
@@ -234,15 +234,15 @@ export function TaskList() {
 
         {/* Filters */}
         {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Status
               </label>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as TaskStatus | 'all')}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
               >
                 <option value="all">Todos os status</option>
                 <option value="para_fazer">Para Fazer</option>
@@ -254,13 +254,13 @@ export function TaskList() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Prioridade
               </label>
               <select
                 value={priorityFilter}
                 onChange={(e) => setPriorityFilter(e.target.value as TaskPriority | 'all')}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
               >
                 <option value="all">Todas as prioridades</option>
                 <option value="baixa">Baixa</option>
@@ -271,13 +271,13 @@ export function TaskList() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                 Cliente
               </label>
               <select
                 value={clientFilter}
                 onChange={(e) => setClientFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
               >
                 <option value="all">Todos os clientes</option>
                 {clients.map(client => (
@@ -294,11 +294,11 @@ export function TaskList() {
       {/* Active Tasks List */}
       <div className="rounded-lg overflow-hidden">
         {/* Table Header */}
-        <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300">
+        <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-slate-50 dark:bg-slate-700 border-b border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-300">
           <div className="col-span-4">
             <button
               onClick={() => handleSort('title')}
-              className="flex items-center gap-2 hover:text-gray-900 dark:hover:text-white"
+              className="flex items-center gap-2 hover:text-slate-900 dark:hover:text-white"
             >
               Tarefa
               <SortIcon field="title" />
@@ -307,7 +307,7 @@ export function TaskList() {
           <div className="col-span-2">
             <button
               onClick={() => handleSort('status')}
-              className="flex items-center gap-2 hover:text-gray-900 dark:hover:text-white"
+              className="flex items-center gap-2 hover:text-slate-900 dark:hover:text-white"
             >
               Status
               <SortIcon field="status" />
@@ -316,7 +316,7 @@ export function TaskList() {
           <div className="col-span-2">
             <button
               onClick={() => handleSort('dueDate')}
-              className="flex items-center gap-2 hover:text-gray-900 dark:hover:text-white"
+              className="flex items-center gap-2 hover:text-slate-900 dark:hover:text-white"
             >
               Vencimento
               <SortIcon field="dueDate" />
@@ -337,7 +337,7 @@ export function TaskList() {
             return (
               <div
                 key={task.id}
-                className="grid grid-cols-12 gap-4 px-4 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors items-center border border-gray-200 dark:border-gray-700 rounded-lg"
+                className="grid grid-cols-12 gap-4 px-4 py-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors items-center border border-slate-200 dark:border-slate-700 rounded-lg"
               >
                 {/* Task Title */}
                 <div 
@@ -346,7 +346,7 @@ export function TaskList() {
                 >
                   <div className="flex items-center gap-2">
                     <span className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(task.priority)}`} />
-                    <h3 className="font-medium text-gray-900 dark:text-white truncate">
+                    <h3 className="font-medium text-slate-900 dark:text-white truncate">
                       {task.title}
                     </h3>
                     {task.type === 'evento' && (
@@ -372,13 +372,13 @@ export function TaskList() {
                 >
                   {task.dueDate ? (
                     <div className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-gray-400" />
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                      <Calendar className="w-3 h-3 text-slate-400" />
+                      <span className="text-sm text-slate-600 dark:text-slate-300">
                         {formatDateForDisplay(task.dueDate)}
                       </span>
                     </div>
                   ) : (
-                    <span className="text-sm text-gray-400">-</span>
+                    <span className="text-sm text-slate-400">-</span>
                   )}
                 </div>
 
@@ -393,12 +393,12 @@ export function TaskList() {
                         className="w-2 h-2 rounded-full flex-shrink-0" 
                         style={{ backgroundColor: client.color }}
                       />
-                      <span className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                      <span className="text-sm text-slate-600 dark:text-slate-300 truncate">
                         {client.name}
                       </span>
                     </div>
                   ) : (
-                    <span className="text-sm text-gray-400">-</span>
+                    <span className="text-sm text-slate-400">-</span>
                   )}
                 </div>
 
@@ -414,12 +414,12 @@ export function TaskList() {
                       ) : (
                         <AlertCircle className="w-3 h-3 text-yellow-500" />
                       )}
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-slate-500">
                         {completedSubtasks}/{totalSubtasks}
                       </span>
                     </div>
                   ) : (
-                    <span className="text-sm text-gray-400">-</span>
+                    <span className="text-sm text-slate-400">-</span>
                   )}
                 </div>
 
@@ -441,7 +441,7 @@ export function TaskList() {
         {/* Empty State for Active Tasks */}
         {activeTasks.length === 0 && (
           <div className="p-8 text-center">
-            <p className="text-gray-500 dark:text-gray-400">
+            <p className="text-slate-500 dark:text-slate-300">
               {searchTerm || statusFilter !== 'all' || priorityFilter !== 'all' || clientFilter !== 'all'
                 ? 'Nenhuma tarefa ativa encontrada com os filtros aplicados.'
                 : 'Nenhuma tarefa ativa encontrada. Crie sua primeira tarefa!'
@@ -454,12 +454,12 @@ export function TaskList() {
       {/* Completed Tasks Section */}
       {completedTasks.length > 0 && (
         <div className="mt-8">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">
             Tarefas Concluídas ({completedTasks.length})
           </h2>
           <div className="rounded-lg overflow-hidden opacity-75">
             {/* Completed Tasks Header */}
-            <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 text-sm font-medium text-gray-700 dark:text-gray-300">
+            <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-slate-50 dark:bg-slate-700 border-b border-slate-200 dark:border-slate-600 text-sm font-medium text-slate-700 dark:text-slate-300">
               <div className="col-span-5">Tarefa</div>
               <div className="col-span-2">Data de Conclusão</div>
               <div className="col-span-2">Vencimento</div>
@@ -478,13 +478,13 @@ export function TaskList() {
                   <div
                     key={task.id}
                     onClick={() => handleTaskClick(task)}
-                    className="grid grid-cols-12 gap-4 px-4 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors items-center border border-gray-200 dark:border-gray-700 rounded-lg"
+                    className="grid grid-cols-12 gap-4 px-4 py-3 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 cursor-pointer transition-colors items-center border border-slate-200 dark:border-slate-700 rounded-lg"
                   >
                     {/* Task Title - Strikethrough */}
                     <div className="col-span-5">
                       <div className="flex items-center gap-2">
                         <span className={`w-2 h-2 rounded-full flex-shrink-0 ${getPriorityColor(task.priority)}`} />
-                        <h3 className="font-medium text-gray-500 dark:text-gray-400 truncate line-through">
+                        <h3 className="font-medium text-slate-500 dark:text-slate-300 truncate line-through">
                           {task.title}
                         </h3>
                         {task.type === 'evento' && (
@@ -497,7 +497,7 @@ export function TaskList() {
                     <div className="col-span-2">
                       <div className="flex items-center gap-1">
                         <CheckCircle2 className="w-3 h-3 text-green-500" />
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                        <span className="text-sm text-slate-500 dark:text-slate-300">
                           {task.updatedAt ? format(new Date(task.updatedAt), 'dd/MM/yyyy') : '-'}
                         </span>
                       </div>
@@ -507,13 +507,13 @@ export function TaskList() {
                     <div className="col-span-2">
                       {task.dueDate ? (
                         <div className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3 text-gray-400 opacity-50" />
-                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                          <Calendar className="w-3 h-3 text-slate-400 opacity-50" />
+                          <span className="text-sm text-slate-500 dark:text-slate-300">
                             {formatDateForDisplay(task.dueDate)}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-400">-</span>
+                        <span className="text-sm text-slate-400">-</span>
                       )}
                     </div>
 
@@ -525,12 +525,12 @@ export function TaskList() {
                             className="w-2 h-2 rounded-full flex-shrink-0 opacity-50" 
                             style={{ backgroundColor: client.color }}
                           />
-                          <span className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                          <span className="text-sm text-slate-500 dark:text-slate-300 truncate">
                             {client.name}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-400">-</span>
+                        <span className="text-sm text-slate-400">-</span>
                       )}
                     </div>
 
@@ -539,12 +539,12 @@ export function TaskList() {
                       {totalSubtasks > 0 ? (
                         <div className="flex items-center gap-1">
                           <CheckCircle2 className="w-3 h-3 text-green-500" />
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-slate-500">
                             {completedSubtasks}/{totalSubtasks}
                           </span>
                         </div>
                       ) : (
-                        <span className="text-sm text-gray-400">-</span>
+                        <span className="text-sm text-slate-400">-</span>
                       )}
                     </div>
                   </div>
