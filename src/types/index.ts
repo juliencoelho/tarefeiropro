@@ -119,6 +119,9 @@ export interface UserFilter {
   sortOrder?: 'asc' | 'desc';
 }
 
+// Sistemas das empresas integrados ao Tarefeiro
+export type Sistema = 'basepro' | 'nexo';
+
 export interface Area {
   id: string;
   name: string;
@@ -126,6 +129,29 @@ export interface Area {
   icon?: string;
   position: number;
   archived: boolean;
+  sistema?: Sistema; // Área ligada a um sistema; sem sistema = só do Tarefeiro (pessoal)
+  createdAt: Date;
+}
+
+export type TipoMonitorado = 'aguardando_retorno' | 'nf_transito' | 'conta_receber' | 'empenho';
+
+// Linha de public.monitoring_items: item manual (ex.: aguardando retorno) ou
+// anotação do usuário sobre um item que vive no BasePro/Nexo (origem + refExterna)
+export interface MonitoringItem {
+  id: string;
+  origem: 'manual' | Sistema;
+  refExterna?: string;
+  kind: TipoMonitorado;
+  title: string;
+  reference?: string;
+  amount?: number;
+  expectedDate?: Date;
+  followUpOn?: Date; // Cobrar em
+  status: 'aberto' | 'resolvido' | 'cancelado';
+  notes?: string;
+  areaId?: string;
+  clientId?: string;
+  resolvedAt?: Date;
   createdAt: Date;
 }
 

@@ -10,16 +10,19 @@ import {
   ChevronLeft,
   ChevronRight,
   Sun,
-  Inbox
+  Inbox,
+  Radar
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { caixaDeEntrada, coresDeArea, pendenciasPorArea } from '../../lib/tarefas';
+import { useItensMonitorados } from '../../hooks/useItensMonitorados';
 
 const menuItems = [
   { icon: Sun, label: 'Hoje', path: '/' },
   { icon: Inbox, label: 'Caixa de entrada', path: '/entrada' },
+  { icon: Radar, label: 'Monitoramento', path: '/monitoramento' },
   { icon: Calendar, label: 'Agenda', path: '/agenda' },
   { icon: Kanban, label: 'Kanban', path: '/kanban' },
   { icon: List, label: 'Lista', path: '/lista' },
@@ -41,6 +44,7 @@ export function Sidebar() {
   const [nomeArea, setNomeArea] = useState('');
 
   const naCaixa = caixaDeEntrada(tasks).length;
+  const paraCobrar = useItensMonitorados().grupos.atencao.length;
   const pendencias = pendenciasPorArea(tasks);
   const areasAtivas = areas.filter(a => !a.archived);
 
@@ -105,7 +109,8 @@ export function Sidebar() {
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
-            const contador = item.path === '/entrada' ? naCaixa : 0;
+            const contador = item.path === '/entrada' ? naCaixa : item.path === '/monitoramento' ? paraCobrar : 0;
+            const corContador = item.path === '/monitoramento' ? 'bg-amber-500' : 'bg-blue-600';
 
             return (
               <li key={item.path}>
@@ -121,9 +126,9 @@ export function Sidebar() {
                   )}
                   {contador > 0 && (
                     collapsed ? (
-                      <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-600" />
+                      <span className={cn('absolute top-1 right-1 w-2 h-2 rounded-full', corContador)} />
                     ) : (
-                      <span className="text-xs font-semibold px-1.5 py-0.5 rounded-full bg-blue-600 text-white">
+                      <span className={cn('text-xs font-semibold px-1.5 py-0.5 rounded-full text-white', corContador)}>
                         {contador}
                       </span>
                     )

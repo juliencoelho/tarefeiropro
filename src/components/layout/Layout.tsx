@@ -4,10 +4,12 @@ import { Header } from './Header';
 import { TaskModal } from '../modals/TaskModal';
 import { QuickCapture } from '../tasks/QuickCapture';
 import { useAppStore } from '../../store/useAppStore';
+import { useAtualizarMonitoramento } from '../../hooks/useItensMonitorados';
 import { cn } from '../../lib/utils';
 
 export function Layout() {
   const { sidebarCollapsed, mobileMenuOpen, setMobileMenuOpen } = useAppStore();
+  useAtualizarMonitoramento();
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex">

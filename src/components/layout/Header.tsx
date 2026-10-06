@@ -2,6 +2,7 @@ import { Bell, Search, Settings, User, Moon, Sun, Menu, LogOut, Inbox } from 'lu
 import { Link } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { supabase } from '../../lib/supabase';
+import { desconectar, listaSistemas } from '../../lib/sistemas';
 
 export function Header() {
   const { isDarkMode, toggleDarkMode, toggleSidebar, mobileMenuOpen, setMobileMenuOpen, setQuickCaptureOpen, currentUser } = useAppStore();
@@ -104,7 +105,11 @@ export function Header() {
             )}
           </div>
           <button
-            onClick={() => supabase.auth.signOut()}
+            onClick={async () => {
+              // Sair do Tarefeiro também desconecta BasePro e Nexo neste aparelho
+              await Promise.all(listaSistemas.map(desconectar));
+              await supabase.auth.signOut();
+            }}
             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
             title="Sair"
             aria-label="Sair"

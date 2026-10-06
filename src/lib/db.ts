@@ -1,6 +1,6 @@
 // Conversão entre as linhas do Supabase (snake_case, datas como texto)
 // e os tipos usados pelas telas (camelCase, Date).
-import { Area, Client, Comment, Subtask, Task, User } from '../types';
+import { Area, Client, Comment, MonitoringItem, Subtask, Task, User } from '../types';
 import { createLocalDate, formatDateForInput } from './utils';
 
 type Row = Record<string, any>;
@@ -148,6 +148,7 @@ export function rowToArea(row: Row): Area {
     icon: row.icon ?? undefined,
     position: row.position,
     archived: row.archived,
+    sistema: row.sistema ?? undefined,
     createdAt: new Date(row.created_at),
   };
 }
@@ -186,5 +187,45 @@ export function areaPatchToRow(patch: Partial<Area>): Row {
   if ('icon' in patch) row.icon = emptyToNull(patch.icon);
   if ('position' in patch) row.position = patch.position;
   if ('archived' in patch) row.archived = patch.archived;
+  if ('sistema' in patch) row.sistema = patch.sistema ?? null;
+  return row;
+}
+
+export function rowToMonitoring(row: Row): MonitoringItem {
+  return {
+    id: row.id,
+    origem: row.origem,
+    refExterna: row.ref_externa ?? undefined,
+    kind: row.kind,
+    title: row.title,
+    reference: row.reference ?? undefined,
+    amount: row.amount === null || row.amount === undefined ? undefined : Number(row.amount),
+    expectedDate: dayFromDb(row.expected_date),
+    followUpOn: dayFromDb(row.follow_up_on),
+    status: row.status,
+    notes: row.notes ?? undefined,
+    areaId: row.area_id ?? undefined,
+    clientId: row.client_id ?? undefined,
+    resolvedAt: instantFromDb(row.resolved_at),
+    createdAt: new Date(row.created_at),
+  };
+}
+
+export function monitoringPatchToRow(patch: Partial<MonitoringItem>): Row {
+  const row: Row = {};
+  if ('id' in patch) row.id = patch.id;
+  if ('origem' in patch) row.origem = patch.origem;
+  if ('refExterna' in patch) row.ref_externa = patch.refExterna ?? null;
+  if ('kind' in patch) row.kind = patch.kind;
+  if ('title' in patch) row.title = patch.title;
+  if ('reference' in patch) row.reference = emptyToNull(patch.reference);
+  if ('amount' in patch) row.amount = patch.amount ?? null;
+  if ('expectedDate' in patch) row.expected_date = dayToDb(patch.expectedDate);
+  if ('followUpOn' in patch) row.follow_up_on = dayToDb(patch.followUpOn);
+  if ('status' in patch) row.status = patch.status;
+  if ('notes' in patch) row.notes = emptyToNull(patch.notes);
+  if ('areaId' in patch) row.area_id = emptyToNull(patch.areaId);
+  if ('clientId' in patch) row.client_id = emptyToNull(patch.clientId);
+  if ('resolvedAt' in patch) row.resolved_at = instantToDb(patch.resolvedAt);
   return row;
 }

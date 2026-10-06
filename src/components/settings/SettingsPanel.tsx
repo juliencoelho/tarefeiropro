@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   Moon, 
   Sun, 
@@ -19,17 +20,21 @@ import {
   AlertCircle,
   Users,
   BarChart,
-  UserPlus
+  UserPlus,
+  Plug
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { AvatarUpload } from './AvatarUpload';
 import { UserManagement, UserReports, UserInvites, UserApprovals } from '../users';
 import { appConfig } from '../../config/app';
+import { SistemasConectados } from './SistemasConectados';
 
 export function SettingsPanel() {
   const { isDarkMode, toggleDarkMode, currentUser, updateUserAvatar, updateCurrentUser, updateUserCommentsAuthor } = useAppStore();
   
-  const [activeTab, setActiveTab] = useState('profile');
+  // ?aba=sistemas abre direto numa aba (ex.: link do Monitoramento)
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get('aba') ?? 'profile');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   
   const [settings, setSettings] = useState({
@@ -112,6 +117,7 @@ export function SettingsPanel() {
 
   const tabs = [
     { id: 'profile', label: 'Perfil', icon: User },
+    { id: 'sistemas', label: 'Sistemas', icon: Plug },
     { id: 'notifications', label: 'Notificações', icon: Bell },
     { id: 'appearance', label: 'Aparência', icon: Palette },
     { id: 'privacy', label: 'Privacidade', icon: Shield },
@@ -137,14 +143,14 @@ export function SettingsPanel() {
 
       {/* Tabs Navigation */}
       <div className="border-b border-slate-200 dark:border-slate-700">
-        <nav className="-mb-px flex space-x-8">
+        <nav className="-mb-px flex gap-6 overflow-x-auto sem-barra">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                     : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:text-slate-300 dark:hover:text-slate-300'
@@ -862,6 +868,8 @@ export function SettingsPanel() {
           </div>
         </div>
       )}
+
+      {activeTab === 'sistemas' && <SistemasConectados />}
 
       {/* Aba de Usuários (apenas para admins) */}
       {activeTab === 'users' && currentUser.role === 'admin' && (

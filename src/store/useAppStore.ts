@@ -2,11 +2,12 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { PostgrestError } from '@supabase/supabase-js';
 import { toast } from 'sonner';
-import { Task, Client, Area, User, ViewMode, AgendaView, TaskStatus, UserInvite, Notification, UserSession, UserFilter } from '../types';
+import { Task, Client, Area, User, MonitoringItem, ViewMode, AgendaView, TaskStatus, UserInvite, Notification, UserSession, UserFilter } from '../types';
 import { supabase } from '../lib/supabase';
 import {
   rowToTask, taskPatchToRow, rowToClient, clientPatchToRow,
   rowToArea, areaPatchToRow, rowToProfile, profilePatchToRow,
+  rowToMonitoring, monitoringPatchToRow,
 } from '../lib/db';
 
 // crypto.randomUUID só existe em contexto seguro (https/localhost);
@@ -29,6 +30,7 @@ interface AppState {
   tasks: Task[];
   clients: Client[];
   areas: Area[];
+  monitoringItems: MonitoringItem[];
   users: User[];
   currentUser: User;
   userInvites: UserInvite[];
@@ -63,6 +65,13 @@ interface AppState {
   updateTaskStatus: (taskId: string, status: TaskStatus) => void;
   
   addArea: (name: string, color: string) => void;
+  addMonitoringItem: (item: Omit<MonitoringItem, 'id' | 'createdAt'>) => void;
+  updateMonitoringItem: (itemId: string, updates: Partial<MonitoringItem>) => void;
+  // Anota algo sobre um item que vive no BasePro/Nexo: cria a linha na primeira vez
+  salvarAnotacao: (
+    base: Pick<MonitoringItem, 'origem' | 'refExterna' | 'kind' | 'title' | 'reference' | 'amount' | 'expectedDate'>,
+    updates: Partial<MonitoringItem>
+  ) => void;
   updateArea: (areaId: string, updates: Partial<Area>) => void;
 
   setClients: (clients: Client[]) => void;
@@ -122,6 +131,7 @@ export const useAppStore = create<AppState>()(
   tasks: [],
   clients: [],
   areas: [],
+  monitoringItems: [],
   users: [],
   currentUser: usuarioVazio,
   userInvites: [],
@@ -156,13 +166,14 @@ export const useAppStore = create<AppState>()(
   
   // Carga inicial: perfil, áreas, clientes e tarefas do usuário logado
   loadAll: async (userId) => {
-    const [profileRes, areasRes, clientsRes, tasksRes] = await Promise.all([
+    const [profileRes, areasRes, clientsRes, tasksRes, monitoringRes] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', userId).single(),
       supabase.from('areas').select('*').order('position'),
       supabase.from('clients').select('*').order('name'),
       supabase.from('tasks').select('*').order('created_at'),
+      supabase.from('monitoring_items').select('*').order('created_at'),
     ]);
-    const error = profileRes.error || areasRes.error || clientsRes.error || tasksRes.error;
+    const error = profileRes.error || areasRes.error || clientsRes.error || tasksRes.error || monitoringRes.error;
     if (error) {
       console.error('Erro ao carregar dados do Supabase', error);
       toast.error('Não foi possível carregar seus dados. Verifique a conexão.');
@@ -175,6 +186,7 @@ export const useAppStore = create<AppState>()(
       areas: areasRes.data.map(rowToArea),
       clients: clientsRes.data.map(rowToClient),
       tasks: tasksRes.data.map((row) => rowToTask(row, owner)),
+      monitoringItems: monitoringRes.data.map(rowToMonitoring),
       dataLoaded: true,
     });
     return true;
@@ -200,6 +212,11 @@ export const useAppStore = create<AppState>()(
           ? { areas: state.areas.filter((a) => a.id !== payload.old.id) }
           : { areas: upsertById(state.areas, rowToArea(payload.new)).sort((a, b) => a.position - b.position) });
       })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'monitoring_items' }, (payload) => {
+        set((state) => payload.eventType === 'DELETE'
+          ? { monitoringItems: state.monitoringItems.filter((m) => m.id !== payload.old.id) }
+          : { monitoringItems: upsertById(state.monitoringItems, rowToMonitoring(payload.new)) });
+      })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
         set({ currentUser: rowToProfile(payload.new) });
       })
@@ -216,6 +233,7 @@ export const useAppStore = create<AppState>()(
     tasks: [],
     clients: [],
     areas: [],
+    monitoringItems: [],
     currentUser: usuarioVazio,
     selectedTask: null,
     isTaskModalOpen: false,
@@ -282,6 +300,31 @@ export const useAppStore = create<AppState>()(
       areas: state.areas.map(area => area.id === areaId ? { ...area, ...updates } : area)
     }));
     persistir(supabase.from('areas').update(areaPatchToRow(updates)).eq('id', areaId), get);
+  },
+
+  // Actions para monitoramento
+  addMonitoringItem: (item) => {
+    const newItem: MonitoringItem = { ...item, id: novoId(), createdAt: new Date() };
+    set((state) => ({ monitoringItems: [...state.monitoringItems, newItem] }));
+    persistir(supabase.from('monitoring_items').insert(monitoringPatchToRow(newItem)), get);
+  },
+
+  updateMonitoringItem: (itemId, updates) => {
+    set((state) => ({
+      monitoringItems: state.monitoringItems.map(m => m.id === itemId ? { ...m, ...updates } : m)
+    }));
+    persistir(supabase.from('monitoring_items').update(monitoringPatchToRow(updates)).eq('id', itemId), get);
+  },
+
+  salvarAnotacao: (base, updates) => {
+    const existente = get().monitoringItems.find(
+      m => m.origem === base.origem && m.refExterna === base.refExterna
+    );
+    if (existente) {
+      get().updateMonitoringItem(existente.id, updates);
+    } else {
+      get().addMonitoringItem({ ...base, status: 'aberto', ...updates });
+    }
   },
 
   // Actions para clientes

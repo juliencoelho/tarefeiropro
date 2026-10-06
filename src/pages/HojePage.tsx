@@ -1,18 +1,21 @@
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowRight, CalendarClock, CalendarX, Inbox, Sun } from 'lucide-react';
+import { AlarmClock, ArrowRight, CalendarClock, CalendarX, Inbox, Sun } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { TaskRow } from '../components/tasks/TaskRow';
 import { CampoRapido } from '../components/tasks/CampoRapido';
 import { ListaVazia, Secao } from '../components/tasks/Secao';
 import { caixaDeEntrada, hojeStr, novaTarefa, organizarHoje } from '../lib/tarefas';
+import { useItensMonitorados } from '../hooks/useItensMonitorados';
+import { LinhaMonitorada } from '../components/monitoramento/LinhaMonitorada';
 
 function HojePage() {
   const { tasks, currentUser, addTask, updateTask } = useAppStore();
   const hoje = hojeStr();
   const { compromissos, planejadas, concluidas, paraConsiderar } = organizarHoje(tasks, hoje);
   const naCaixa = caixaDeEntrada(tasks).length;
+  const paraCobrar = useItensMonitorados().grupos.atencao;
   const totalDoDia = planejadas.length + concluidas.length;
 
   const dataPorExtenso = format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR });
@@ -80,6 +83,23 @@ function HojePage() {
           </ul>
         )}
       </Secao>
+
+      {paraCobrar.length > 0 && (
+        <Secao titulo="Cobrar hoje" quantidade={paraCobrar.length} icone={<AlarmClock className="w-3.5 h-3.5" />}>
+          <ul>
+            {paraCobrar.slice(0, 3).map((item) => (
+              <LinhaMonitorada key={item.chave} item={item} compacta />
+            ))}
+          </ul>
+          <Link
+            to="/monitoramento"
+            className="inline-flex items-center gap-1 px-3 mt-1 text-xs font-medium text-blue-700 dark:text-blue-300 hover:underline"
+          >
+            {paraCobrar.length > 3 ? `Ver todos os ${paraCobrar.length} no Monitoramento` : 'Abrir Monitoramento'}
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </Secao>
+      )}
 
       {paraConsiderar.length > 0 && (
         <Secao titulo="Pra considerar" quantidade={paraConsiderar.length}>
