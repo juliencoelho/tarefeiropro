@@ -47,24 +47,28 @@ const menuItems = [
 ];
 
 export function Sidebar() {
-  const { sidebarCollapsed, toggleSidebar, setTaskModalOpen } = useAppStore();
+  const { sidebarCollapsed, toggleSidebar, setTaskModalOpen, mobileMenuOpen, setMobileMenuOpen } = useAppStore();
   const location = useLocation();
+  // No celular a barra é uma gaveta e sempre abre inteira; recolher só vale no desktop
+  const collapsed = sidebarCollapsed && !mobileMenuOpen;
 
   return (
     <aside className={cn(
       "fixed left-0 top-0 h-full bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 transition-all duration-300 flex flex-col z-40",
-      sidebarCollapsed ? "w-16" : "w-64"
+      collapsed ? "w-16" : "w-64",
+      mobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
     )}>
       {/* Logo */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-slate-200 dark:border-slate-700">
-        {!sidebarCollapsed && (
+        {!collapsed && (
           <h1 className="text-xl font-bold text-slate-900 dark:text-white">
             Tarefeiro Pro
           </h1>
         )}
         <button
           onClick={toggleSidebar}
-          className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+          className="hidden md:block p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+          aria-label={sidebarCollapsed ? 'Expandir menu' : 'Recolher menu'}
         >
           {sidebarCollapsed ? (
             <ChevronRight className="w-4 h-4 text-slate-600 dark:text-slate-300" />
@@ -77,14 +81,17 @@ export function Sidebar() {
       {/* Quick Actions */}
       <div className="p-4">
         <button
-          onClick={() => setTaskModalOpen(true)}
+          onClick={() => {
+            setMobileMenuOpen(false);
+            setTaskModalOpen(true);
+          }}
           className={cn(
             "w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center justify-center gap-2",
-            sidebarCollapsed ? "p-3" : "p-3"
+            "p-3"
           )}
         >
           <Plus className="w-5 h-5" />
-          {!sidebarCollapsed && <span className="font-medium">Nova Tarefa</span>}
+          {!collapsed && <span className="font-medium">Nova Tarefa</span>}
         </button>
       </div>
 
@@ -99,17 +106,18 @@ export function Sidebar() {
               <li key={item.path}>
                 <Link
                   to={item.path}
+                  onClick={() => setMobileMenuOpen(false)}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
                     isActive 
                       ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" 
                       : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800",
-                    sidebarCollapsed && "justify-center"
+                    collapsed && "justify-center"
                   )}
-                  title={sidebarCollapsed ? item.label : undefined}
+                  title={collapsed ? item.label : undefined}
                 >
                   <Icon className="w-5 h-5 flex-shrink-0" />
-                  {!sidebarCollapsed && (
+                  {!collapsed && (
                     <span className="font-medium">{item.label}</span>
                   )}
                 </Link>
@@ -120,7 +128,7 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      {!sidebarCollapsed && (
+      {!collapsed && (
         <div className="p-4 border-t border-slate-200 dark:border-slate-700">
           <div className="text-xs text-slate-500 dark:text-slate-300 text-center">
             Tarefeiro Pro v1.0

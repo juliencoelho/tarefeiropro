@@ -24,6 +24,7 @@ import {
 import { useAppStore } from '../../store/useAppStore';
 import { AvatarUpload } from './AvatarUpload';
 import { UserManagement, UserReports, UserInvites, UserApprovals } from '../users';
+import { appConfig } from '../../config/app';
 
 export function SettingsPanel() {
   const { isDarkMode, toggleDarkMode, currentUser, updateUserAvatar, updateCurrentUser, updateUserCommentsAuthor } = useAppStore();
@@ -114,7 +115,7 @@ export function SettingsPanel() {
     { id: 'notifications', label: 'Notificações', icon: Bell },
     { id: 'appearance', label: 'Aparência', icon: Palette },
     { id: 'privacy', label: 'Privacidade', icon: Shield },
-    ...(currentUser.role === 'admin' ? [
+    ...(currentUser.role === 'admin' && appConfig.features.gestaoUsuarios ? [
       { id: 'users', label: 'Usuários', icon: Users },
       { id: 'reports', label: 'Relatórios', icon: BarChart },
       { id: 'invites', label: 'Convites', icon: UserPlus },

@@ -1,57 +1,24 @@
-# React + TypeScript + Vite
+# Tarefeiro Pro
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Central pessoal de tarefas, compromissos e monitoramento (segundo cérebro).
 
-Currently, two official plugins are available:
+- **Front:** React + Vite + Tailwind + Zustand
+- **Banco:** Supabase (Postgres com RLS por usuário e tempo real)
+- **Deploy:** Vercel, publicado automaticamente a cada push na `master`
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Rodar localmente
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```bash
+npm install
+cp .env.example .env   # preencha URL e chave publicável do Supabase
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Banco de dados
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+O schema está em `supabase/migrations/`. Toda tabela tem dono (`user_id`) e só o dono
+enxerga as próprias linhas. Só e-mails cadastrados em `public.allowed_signups` conseguem
+criar conta.
 
-export default tseslint.config({
-  extends: [
-    // other configs...
-    // Enable lint rules for React
-    reactX.configs['recommended-typescript'],
-    // Enable lint rules for React DOM
-    reactDom.configs.recommended,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+O assistente (Cowork) lê e escreve direto no banco pelo conector do Supabase. Ao inserir
+por SQL, informe `user_id` e use `source = 'cowork'`.

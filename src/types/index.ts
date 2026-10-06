@@ -119,6 +119,16 @@ export interface UserFilter {
   sortOrder?: 'asc' | 'desc';
 }
 
+export interface Area {
+  id: string;
+  name: string;
+  color: string;
+  icon?: string;
+  position: number;
+  archived: boolean;
+  createdAt: Date;
+}
+
 export interface Client {
   id: string;
   name: string;
@@ -126,6 +136,8 @@ export interface Client {
   phone?: string;
   company?: string;
   color: string;
+  areaId?: string;
+  notes?: string;
   createdAt: Date;
 }
 
@@ -171,6 +183,11 @@ export interface Task {
   startTime?: string; // Para eventos
   endTime?: string; // Para eventos
   clientId?: string;
+  areaId?: string;
+  contactId?: string;
+  plannedFor?: Date; // Dia em que planejei fazer (tela Hoje) — diferente do prazo
+  inInbox?: boolean; // Ainda na caixa de entrada, sem triagem
+  source?: 'app' | 'cowork'; // Quem criou a tarefa
   assignedTo: User[];
   createdBy: User;
   createdAt: Date;

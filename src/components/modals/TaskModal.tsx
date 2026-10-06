@@ -202,7 +202,7 @@ export function TaskModal() {
         comments: [],
         subtasks: [],
         attachments: [],
-        createdBy: { id: '1', name: 'Usuário', email: 'user@example.com', role: 'user' as const },
+        createdBy: currentUser,
         tags: [],
         isVisibleToAll: formData.isVisibleToAll,
         originalDueDate: newDueDate, // Para nova tarefa, a data original é a data inicial

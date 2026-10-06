@@ -1,36 +1,36 @@
-import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { TaskModal } from '../modals/TaskModal';
 import { useAppStore } from '../../store/useAppStore';
-import { Toaster } from 'sonner';
-import { mockTasks, mockClients } from '../../data/mockData';
+import { cn } from '../../lib/utils';
 
 export function Layout() {
-  const { isDarkMode, sidebarCollapsed, setTasks, setClients } = useAppStore();
-
-  // Carregar dados mockados na inicialização
-  useEffect(() => {
-    setTasks(mockTasks);
-    setClients(mockClients);
-  }, [setTasks, setClients]);
+  const { sidebarCollapsed, mobileMenuOpen, setMobileMenuOpen } = useAppStore();
 
   return (
-    <div className={isDarkMode ? 'dark' : ''}>
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex">
-        <Sidebar />
-        <div className={`flex-1 flex flex-col transition-all duration-300 ${
-          sidebarCollapsed ? 'ml-16' : 'ml-64'
-        }`}>
-          <Header />
-          <main className="flex-1 overflow-hidden">
-            <Outlet />
-          </main>
-        </div>
-        <TaskModal />
-        <Toaster position="top-right" />
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex">
+      <Sidebar />
+
+      {/* Fundo escurecido atrás da gaveta no celular */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-30 md:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      <div className={cn(
+        'flex-1 flex flex-col min-w-0 transition-all duration-300',
+        sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'
+      )}>
+        <Header />
+        <main className="flex-1 overflow-hidden">
+          <Outlet />
+        </main>
       </div>
+      <TaskModal />
     </div>
   );
 }

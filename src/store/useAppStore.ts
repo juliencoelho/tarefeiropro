@@ -1,20 +1,34 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { Task, Client, User, ViewMode, AgendaView, TaskStatus, UserInvite, Notification, UserSession, UserFilter } from '../types';
+import type { PostgrestError } from '@supabase/supabase-js';
+import { toast } from 'sonner';
+import { Task, Client, Area, User, ViewMode, AgendaView, TaskStatus, UserInvite, Notification, UserSession, UserFilter } from '../types';
+import { supabase } from '../lib/supabase';
+import {
+  rowToTask, taskPatchToRow, rowToClient, clientPatchToRow,
+  rowToArea, rowToProfile, profilePatchToRow,
+} from '../lib/db';
 
-const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})$/;
+// crypto.randomUUID só existe em contexto seguro (https/localhost);
+// o fallback cobre o acesso pelo IP da rede local em desenvolvimento.
+const novoId = (): string =>
+  typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, (c) =>
+        (Number(c) ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (Number(c) / 4)))).toString(16));
 
-const dateReviver = (_key: string, value: unknown) => {
-  if (typeof value === 'string' && ISO_DATE_REGEX.test(value)) {
-    return new Date(value);
-  }
-  return value;
-};
+const usuarioVazio: User = { id: '', name: '', email: '', role: 'admin' };
+
+const upsertById = <T extends { id: string }>(list: T[], item: T): T[] =>
+  list.some((x) => x.id === item.id) ? list.map((x) => (x.id === item.id ? item : x)) : [...list, item];
 
 interface AppState {
-  // Dados
+  // Dados (vêm do Supabase)
+  userId: string | null;
+  dataLoaded: boolean;
   tasks: Task[];
   clients: Client[];
+  areas: Area[];
   users: User[];
   currentUser: User;
   userInvites: UserInvite[];
@@ -28,12 +42,18 @@ interface AppState {
   isTaskModalOpen: boolean;
   isDarkMode: boolean;
   sidebarCollapsed: boolean;
+  mobileMenuOpen: boolean;
   
   // User Management UI State
   isUserModalOpen: boolean;
   selectedUser: User | null;
   userFilters: UserFilter;
   
+  // Sincronização com o Supabase
+  loadAll: (userId: string) => Promise<boolean>;
+  subscribeRealtime: () => () => void;
+  clearData: () => void;
+
   // Actions
   setTasks: (tasks: Task[]) => void;
   addTask: (task: Omit<Task, 'id'>) => void;
@@ -85,21 +105,20 @@ interface AppState {
   setTaskModalOpen: (open: boolean) => void;
   toggleDarkMode: () => void;
   toggleSidebar: () => void;
+  setMobileMenuOpen: (open: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
   // Estado inicial
+  userId: null,
+  dataLoaded: false,
   tasks: [],
   clients: [],
+  areas: [],
   users: [],
-  currentUser: {
-    id: '1',
-    name: 'Administrador',
-    email: 'admin@tarefeiropro.com',
-    role: 'admin'
-  },
+  currentUser: usuarioVazio,
   userInvites: [],
   notifications: [],
   userSessions: [],
@@ -117,6 +136,7 @@ export const useAppStore = create<AppState>()(
   isTaskModalOpen: false,
   isDarkMode: false,
   sidebarCollapsed: false,
+  mobileMenuOpen: false,
   
   // User Management UI State
   isUserModalOpen: false,
@@ -128,62 +148,149 @@ export const useAppStore = create<AppState>()(
     approved: undefined
   },
   
-  // Actions para tarefas
-  setTasks: (tasks) => set({ tasks }),
-  
-  addTask: (task) => set((state) => ({
-    tasks: [...state.tasks, { ...task, id: Date.now().toString() }]
-  })),
-  
-  updateTask: (taskId, updates) => set((state) => ({
-    tasks: state.tasks.map(task => 
-      task.id === taskId 
-        ? { ...task, ...updates, updatedAt: new Date() }
-        : task
-    )
-  })),
-  
-  deleteTask: (taskId) => set((state) => ({
-    tasks: state.tasks.filter(task => task.id !== taskId)
-  })),
-  
-  updateTaskStatus: (taskId, status) => set((state) => {
-    const taskExists = state.tasks.some(task => task.id === taskId);
-    if (!taskExists) {
-      console.warn(`Task with ID ${taskId} not found`);
-      return state;
+  // Carga inicial: perfil, áreas, clientes e tarefas do usuário logado
+  loadAll: async (userId) => {
+    const [profileRes, areasRes, clientsRes, tasksRes] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', userId).single(),
+      supabase.from('areas').select('*').order('position'),
+      supabase.from('clients').select('*').order('name'),
+      supabase.from('tasks').select('*').order('created_at'),
+    ]);
+    const error = profileRes.error || areasRes.error || clientsRes.error || tasksRes.error;
+    if (error) {
+      console.error('Erro ao carregar dados do Supabase', error);
+      toast.error('Não foi possível carregar seus dados. Verifique a conexão.');
+      return false;
     }
-    
-    return {
-      tasks: state.tasks.map(task => 
-        task.id === taskId 
-          ? { 
-              ...task, 
-              status, 
-              updatedAt: new Date(),
-              completedAt: status === 'feito' ? new Date() : task.completedAt
-            }
+    const owner = rowToProfile(profileRes.data);
+    set({
+      userId,
+      currentUser: owner,
+      areas: areasRes.data.map(rowToArea),
+      clients: clientsRes.data.map(rowToClient),
+      tasks: tasksRes.data.map((row) => rowToTask(row, owner)),
+      dataLoaded: true,
+    });
+    return true;
+  },
+
+  // Tempo real: o que mudar no banco (outro aparelho, Cowork) aparece na tela.
+  // O RLS garante que só chegam linhas do usuário logado.
+  subscribeRealtime: () => {
+    const channel = supabase
+      .channel('dados-do-usuario')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, (payload) => {
+        set((state) => payload.eventType === 'DELETE'
+          ? { tasks: state.tasks.filter((t) => t.id !== payload.old.id) }
+          : { tasks: upsertById(state.tasks, rowToTask(payload.new, state.currentUser)) });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, (payload) => {
+        set((state) => payload.eventType === 'DELETE'
+          ? { clients: state.clients.filter((c) => c.id !== payload.old.id) }
+          : { clients: upsertById(state.clients, rowToClient(payload.new)) });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'areas' }, (payload) => {
+        set((state) => payload.eventType === 'DELETE'
+          ? { areas: state.areas.filter((a) => a.id !== payload.old.id) }
+          : { areas: upsertById(state.areas, rowToArea(payload.new)).sort((a, b) => a.position - b.position) });
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
+        set({ currentUser: rowToProfile(payload.new) });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  },
+
+  clearData: () => set({
+    userId: null,
+    dataLoaded: false,
+    tasks: [],
+    clients: [],
+    areas: [],
+    currentUser: usuarioVazio,
+    selectedTask: null,
+    isTaskModalOpen: false,
+  }),
+
+  // Actions para tarefas: atualizam a tela na hora e gravam no Supabase em seguida
+  setTasks: (tasks) => set({ tasks }),
+
+  addTask: (task) => {
+    const newTask = { ...task, id: novoId() } as Task;
+    set((state) => ({ tasks: [...state.tasks, newTask] }));
+    persistir(supabase.from('tasks').insert(taskPatchToRow(newTask)), get);
+  },
+
+  updateTask: (taskId, updates) => {
+    set((state) => ({
+      tasks: state.tasks.map(task =>
+        task.id === taskId
+          ? { ...task, ...updates, updatedAt: new Date() }
           : task
       )
-    };
-  }),
-  
+    }));
+    const row = taskPatchToRow(updates);
+    if (Object.keys(row).length === 0) return;
+    persistir(supabase.from('tasks').update(row).eq('id', taskId), get);
+  },
+
+  deleteTask: (taskId) => {
+    set((state) => ({
+      tasks: state.tasks.filter(task => task.id !== taskId)
+    }));
+    persistir(supabase.from('tasks').delete().eq('id', taskId), get);
+  },
+
+  updateTaskStatus: (taskId, status) => {
+    const task = get().tasks.find(t => t.id === taskId);
+    if (!task) {
+      console.warn(`Task with ID ${taskId} not found`);
+      return;
+    }
+
+    const patch: Partial<Task> = status === 'feito'
+      ? { status, completedAt: new Date() }
+      : { status };
+
+    set((state) => ({
+      tasks: state.tasks.map(t =>
+        t.id === taskId ? { ...t, ...patch, updatedAt: new Date() } : t
+      )
+    }));
+    persistir(supabase.from('tasks').update(taskPatchToRow(patch)).eq('id', taskId), get);
+  },
+
   // Actions para clientes
   setClients: (clients) => set({ clients }),
-  
-  addClient: (client) => set((state) => ({
-    clients: [...state.clients, { ...client, id: Date.now().toString() }]
-  })),
-  
-  updateClient: (clientId, updates) => set((state) => ({
-    clients: state.clients.map(client => 
-      client.id === clientId ? { ...client, ...updates } : client
-    )
-  })),
-  
-  deleteClient: (clientId) => set((state) => ({
-    clients: state.clients.filter(client => client.id !== clientId)
-  })),
+
+  addClient: (client) => {
+    const newClient = { ...client, id: novoId() } as Client;
+    set((state) => ({ clients: [...state.clients, newClient] }));
+    persistir(supabase.from('clients').insert(clientPatchToRow(newClient)), get);
+  },
+
+  updateClient: (clientId, updates) => {
+    set((state) => ({
+      clients: state.clients.map(client =>
+        client.id === clientId ? { ...client, ...updates } : client
+      )
+    }));
+    persistir(supabase.from('clients').update(clientPatchToRow(updates)).eq('id', clientId), get);
+  },
+
+  deleteClient: (clientId) => {
+    set((state) => ({
+      clients: state.clients.filter(client => client.id !== clientId),
+      // No banco, client_id vira null (on delete set null); espelha na tela
+      tasks: state.tasks.map(task =>
+        task.clientId === clientId ? { ...task, clientId: undefined } : task
+      )
+    }));
+    persistir(supabase.from('clients').delete().eq('id', clientId), get);
+  },
 
   // Actions para gestão de usuários
   setUsers: (users) => set({ users }),
@@ -255,32 +362,53 @@ export const useAppStore = create<AppState>()(
     )
   })),
 
-  updateUserAvatar: (avatarUrl) => set((state) => ({
-    currentUser: { ...state.currentUser, avatar: avatarUrl }
-  })),
+  updateUserAvatar: (avatarUrl) => {
+    set((state) => ({
+      currentUser: { ...state.currentUser, avatar: avatarUrl }
+    }));
+    const { currentUser } = get();
+    persistir(supabase.from('profiles').update(profilePatchToRow({ avatar: avatarUrl })).eq('id', currentUser.id), get);
+  },
 
-  updateCurrentUser: (updates) => set((state) => ({
-    currentUser: { ...state.currentUser, ...updates }
-  })),
+  updateCurrentUser: (updates) => {
+    set((state) => ({
+      currentUser: { ...state.currentUser, ...updates }
+    }));
+    const { currentUser } = get();
+    persistir(supabase.from('profiles').update(profilePatchToRow(updates)).eq('id', currentUser.id), get);
+  },
 
-  updateUserCommentsAuthor: (userId, newUserData) => set((state) => ({
-    tasks: state.tasks.map(task => ({
+  updateUserCommentsAuthor: (userId, newUserData) => {
+    const renameAuthor = (comment: Task['comments'][number]) =>
+      comment.author.id === userId
+        ? { ...comment, author: { ...comment.author, ...newUserData } }
+        : comment;
+    const hasAuthor = (task: Task) =>
+      task.comments.some(c => c.author.id === userId) ||
+      task.subtasks.some(st => st.comments.some(c => c.author.id === userId));
+
+    const changed = get().tasks.filter(hasAuthor).map(task => ({
       ...task,
-      comments: task.comments.map(comment => 
-        comment.author.id === userId 
-          ? { ...comment, author: { ...comment.author, ...newUserData } }
-          : comment
-      ),
+      comments: task.comments.map(renameAuthor),
       subtasks: task.subtasks.map(subtask => ({
         ...subtask,
-        comments: subtask.comments.map(comment =>
-          comment.author.id === userId
-            ? { ...comment, author: { ...comment.author, ...newUserData } }
-            : comment
-        )
+        comments: subtask.comments.map(renameAuthor)
       }))
-    }))
-  })),
+    }));
+    if (changed.length === 0) return;
+
+    set((state) => ({
+      tasks: state.tasks.map(task => changed.find(c => c.id === task.id) ?? task)
+    }));
+    for (const task of changed) {
+      persistir(
+        supabase.from('tasks')
+          .update(taskPatchToRow({ comments: task.comments, subtasks: task.subtasks }))
+          .eq('id', task.id),
+        get
+      );
+    }
+  },
 
   // Actions para convites de usuários
   setUserInvites: (invites) => set({ userInvites: invites }),
@@ -370,23 +498,37 @@ export const useAppStore = create<AppState>()(
   setSelectedTask: (task) => set({ selectedTask: task }),
   setTaskModalOpen: (open) => set({ isTaskModalOpen: open }),
   toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
-  toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed }))
+  toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+  setMobileMenuOpen: (open) => set({ mobileMenuOpen: open })
     }),
     {
       name: 'tarefeiro-pro-store',
-      version: 1,
-      storage: createJSONStorage(() => localStorage, { reviver: dateReviver }),
+      version: 2,
+      storage: createJSONStorage(() => localStorage),
+      // Os dados vivem no Supabase; no navegador ficam só as preferências da tela.
       partialize: (state) => ({
-        tasks: state.tasks,
-        clients: state.clients,
-        users: state.users,
-        currentUser: state.currentUser,
-        userInvites: state.userInvites,
-        notifications: state.notifications,
-        userSessions: state.userSessions,
         isDarkMode: state.isDarkMode,
         sidebarCollapsed: state.sidebarCollapsed,
       }),
+      // A v1 guardava tarefas e clientes no navegador (antes do Supabase): descarta.
+      migrate: (persisted) => {
+        const { isDarkMode = false, sidebarCollapsed = false } = (persisted ?? {}) as Partial<AppState>;
+        return { isDarkMode, sidebarCollapsed };
+      },
     }
   )
 );
+
+// Grava no Supabase depois da atualização otimista na tela. Se o banco recusar,
+// avisa e recarrega tudo do servidor, para a tela não mostrar algo que não foi salvo.
+async function persistir(
+  request: PromiseLike<{ error: PostgrestError | null }>,
+  get: () => AppState
+) {
+  const { error } = await request;
+  if (!error) return;
+  console.error('Erro ao salvar no Supabase', error);
+  toast.error('Não foi possível salvar. Recarregando seus dados...');
+  const { userId, loadAll } = get();
+  if (userId) await loadAll(userId);
+}
