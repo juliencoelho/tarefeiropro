@@ -86,7 +86,9 @@ export function LinhaMonitorada({ item, compacta }: Props) {
           <div className="flex items-start justify-between gap-3">
             <p className="text-sm font-medium text-slate-900 dark:text-slate-100 break-words">
               {item.titulo}
-              {item.cliente && <span className="font-normal text-slate-600 dark:text-slate-300"> · {item.cliente}</span>}
+              {item.cliente && !item.titulo.toLowerCase().includes(item.cliente.toLowerCase()) && (
+                <span className="font-normal text-slate-600 dark:text-slate-300"> · {item.cliente}</span>
+              )}
             </p>
             {item.valor !== undefined && (
               <span className="text-sm font-medium tabular-nums text-slate-900 dark:text-slate-100 shrink-0">

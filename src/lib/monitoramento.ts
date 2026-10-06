@@ -125,7 +125,9 @@ export async function buscarNexo(db: SupabaseClient): Promise<ItemMonitorado[]> 
   const empenhosPorFat = new Map<string, string[]>();
   for (const e of empenhos.data ?? []) {
     if (!e.faturamento_id) continue;
-    empenhosPorFat.set(e.faturamento_id, [...(empenhosPorFat.get(e.faturamento_id) ?? []), e.numero_empenho]);
+    const nums = empenhosPorFat.get(e.faturamento_id) ?? [];
+    if (!nums.includes(e.numero_empenho)) nums.push(e.numero_empenho);
+    empenhosPorFat.set(e.faturamento_id, nums);
   }
   const doEmpenho = (fatId?: string | null) => {
     const nums = fatId ? empenhosPorFat.get(fatId) : undefined;
@@ -196,6 +198,19 @@ export async function buscarNexo(db: SupabaseClient): Promise<ItemMonitorado[]> 
 
   const nfsNaLista = new Set((fat.data ?? []).map((nf) => nf.id));
 
+  // O Nexo guarda uma linha por produto do empenho: agrupa por número + órgão + estágio
+  interface Grupo {
+    numero: string;
+    orgao?: string;
+    estagio: string;
+    produtos: string[];
+    valor: number;
+    data?: string;
+    rotuloData: string;
+    coberto: boolean;
+  }
+  const grupos = new Map<string, Grupo>();
+
   for (const e of empenhos.data ?? []) {
     const contrato = e.contratos as unknown as { cliente_nome?: string; nome_produto?: string } | null;
     const faturamento = e.faturamentos as unknown as { status_entrega?: string } | null;
@@ -224,16 +239,32 @@ export async function buscarNexo(db: SupabaseClient): Promise<ItemMonitorado[]> 
       estagio = 'Entregue · sem lançamento no financeiro';
     }
 
-    const ref = `contrato_empenhos:${e.id}`;
+    const orgao = e.cliente_nome ?? contrato?.cliente_nome ?? undefined;
+    const chaveGrupo = `${e.numero_empenho}@${orgao ?? ''}|${estagio}`;
+    const g: Grupo = grupos.get(chaveGrupo) ?? {
+      numero: e.numero_empenho, orgao, estagio, produtos: [], valor: 0, rotuloData, coberto: true,
+    };
+    if (contrato?.nome_produto) g.produtos.push(contrato.nome_produto);
+    g.valor += num(e.valor_total) ?? 0;
+    if (data && (!g.data || data < g.data)) g.data = data; // prazo mais urgente do grupo
+    g.coberto = g.coberto && coberto;
+    grupos.set(chaveGrupo, g);
+  }
+
+  for (const [chaveGrupo, g] of grupos) {
+    // Referência estável do grupo (não é um id de linha): contrato_empenhos:<número>@<órgão>|<estágio>
+    const ref = `contrato_empenhos:${chaveGrupo}`;
+    const detalheProdutos =
+      g.produtos.length === 0 ? '' : g.produtos.length === 1 ? ` · ${g.produtos[0]}` : ` · ${g.produtos.length} itens`;
     itens.push({
       chave: chaveDe('nexo', ref), origem: 'nexo', ref, tipo: 'empenho',
-      titulo: `Empenho ${e.numero_empenho}`,
-      detalhe: contrato?.nome_produto ? `${estagio} · ${contrato.nome_produto}` : estagio,
-      cliente: e.cliente_nome ?? contrato?.cliente_nome ?? undefined,
-      valor: num(e.valor_total),
-      data,
-      rotuloData,
-      coberto,
+      titulo: `Empenho ${g.numero}`,
+      detalhe: g.estagio + detalheProdutos,
+      cliente: g.orgao,
+      valor: num(g.valor),
+      data: g.data,
+      rotuloData: g.rotuloData,
+      coberto: g.coberto,
     });
   }
 
