@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { useAppStore } from '../../store/useAppStore';
 import { TipoMonitorado } from '../../types';
 import { brl, ItemMonitorado } from '../../lib/monitoramento';
-import { diaDe, hojeStr } from '../../lib/tarefas';
+import { dataCurta as curta, diaDe, hojeStr } from '../../lib/tarefas';
 import { cn, createLocalDate, formatDateForInput } from '../../lib/utils';
 
 const icones: Record<TipoMonitorado, typeof Truck> = {
@@ -14,7 +14,6 @@ const icones: Record<TipoMonitorado, typeof Truck> = {
   aguardando_retorno: Hourglass,
 };
 
-const curta = (dia: string) => `${dia.slice(8, 10)}/${dia.slice(5, 7)}`;
 const daquiA = (dias: number) => new Date(new Date().setHours(0, 0, 0, 0) + dias * 24 * 60 * 60 * 1000);
 
 const botao =

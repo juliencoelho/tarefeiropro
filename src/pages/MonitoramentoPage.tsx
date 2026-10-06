@@ -53,8 +53,9 @@ function MonitoramentoPage() {
   const [tipo, setTipo] = useState<FiltroTipo>('todos');
   const [origem, setOrigem] = useState<FiltroOrigem>('todas');
 
+  // Em "Tudo", empenho já faturado aparece como detalhe da NF/conta a receber, não de novo
   const filtrados = ativos.filter(
-    (i) => (tipo === 'todos' || i.tipo === tipo) && (origem === 'todas' || i.origem === origem)
+    (i) => (tipo === 'todos' ? !i.coberto : i.tipo === tipo) && (origem === 'todas' || i.origem === origem)
   );
   const grupos = agrupar(filtrados, hojeStr());
   const soma = totais(ativos);

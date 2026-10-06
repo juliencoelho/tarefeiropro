@@ -11,7 +11,7 @@ export function useItensMonitorados() {
 
   return useMemo(() => {
     const { ativos, dispensados } = combinar(itensExternos(sistemas), monitoringItems);
-    return { ativos, dispensados, grupos: agrupar(ativos, hojeStr()) };
+    return { ativos, dispensados, grupos: agrupar(ativos.filter((i) => !i.coberto), hojeStr()) };
   }, [sistemas, monitoringItems]);
 }
 

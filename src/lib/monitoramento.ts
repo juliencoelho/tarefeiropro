@@ -3,7 +3,7 @@
 // no Tarefeiro fica só a anotação do usuário (cobrar em, notas, dispensado).
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { MonitoringItem, Sistema, TipoMonitorado } from '../types';
-import { diaDe } from './tarefas';
+import { dataCurta as curta, diaDe } from './tarefas';
 
 export interface ItemMonitorado {
   chave: string;
@@ -16,6 +16,9 @@ export interface ItemMonitorado {
   valor?: number;
   data?: string; // yyyy-MM-dd: vencimento, previsão de entrega ou prazo de entrega
   rotuloData?: string;
+  // Empenho já faturado: a NF e a conta a receber dele contam a mesma história.
+  // Fica no filtro Empenhos, mas sai da visão geral e das contagens de atenção.
+  coberto?: boolean;
   anotacao?: MonitoringItem;
 }
 
@@ -39,7 +42,7 @@ function maisDias(dia: string, dias: number): string {
   const [a, m, d] = dia.slice(0, 10).split('-').map(Number);
   return diaDe(new Date(a, m - 1, d + dias));
 }
-const curta = (dia: string) => `${dia.slice(8, 10)}/${dia.slice(5, 7)}`;
+
 
 function falhou(res: { error: { message: string } | null }, oQue: string) {
   if (res.error) throw new Error(`${oQue}: ${res.error.message}`);
@@ -118,12 +121,23 @@ export async function buscarNexo(db: SupabaseClient): Promise<ItemMonitorado[]> 
 
   const itens: ItemMonitorado[] = [];
 
+  // Empenhos por faturamento, para mostrar "Empenho X" na NF e na conta a receber
+  const empenhosPorFat = new Map<string, string[]>();
+  for (const e of empenhos.data ?? []) {
+    if (!e.faturamento_id) continue;
+    empenhosPorFat.set(e.faturamento_id, [...(empenhosPorFat.get(e.faturamento_id) ?? []), e.numero_empenho]);
+  }
+  const doEmpenho = (fatId?: string | null) => {
+    const nums = fatId ? empenhosPorFat.get(fatId) : undefined;
+    return nums ? ` · Empenho ${nums.join(', ')}` : '';
+  };
+
   for (const nf of fat.data ?? []) {
     const ref = `faturamentos:${nf.id}`;
     itens.push({
       chave: chaveDe('nexo', ref), origem: 'nexo', ref, tipo: 'nf_transito',
       titulo: `NF ${nf.numero_nf}`,
-      detalhe: nf.status_entrega === 'A_SEPARAR' ? 'Venda · a separar' : 'Venda · na fila de entrega',
+      detalhe: (nf.status_entrega === 'A_SEPARAR' ? 'Venda · a separar' : 'Venda · na fila de entrega') + doEmpenho(nf.id),
       cliente: nf.cliente_nome_snapshot ?? undefined,
       valor: num(nf.valor_total),
       data: maisDias(nf.data_emissao, DIAS_ENTREGA_ESPERADA),
@@ -161,6 +175,7 @@ export async function buscarNexo(db: SupabaseClient): Promise<ItemMonitorado[]> 
     itens.push({
       chave: chaveDe('nexo', ref), origem: 'nexo', ref, tipo: 'conta_receber',
       titulo: t.descricao,
+      detalhe: doEmpenho(t.venda_id).replace(/^ · /, '') || undefined,
       cliente: t.cliente_nome ?? undefined,
       valor: num((num(t.valor) ?? 0) - (num(t.valor_pago) ?? 0)),
       data: t.data_vencimento ?? undefined,
@@ -179,6 +194,8 @@ export async function buscarNexo(db: SupabaseClient): Promise<ItemMonitorado[]> 
     for (const t of fin.data ?? []) comFinanceiro.add(t.venda_id);
   }
 
+  const nfsNaLista = new Set((fat.data ?? []).map((nf) => nf.id));
+
   for (const e of empenhos.data ?? []) {
     const contrato = e.contratos as unknown as { cliente_nome?: string; nome_produto?: string } | null;
     const faturamento = e.faturamentos as unknown as { status_entrega?: string } | null;
@@ -188,16 +205,19 @@ export async function buscarNexo(db: SupabaseClient): Promise<ItemMonitorado[]> 
     let estagio: string;
     let data = e.data_limite_entrega ?? undefined;
     let rotuloData = 'Entregar até';
+    let coberto = false;
     if (e.status === 'PENDENTE') {
       estagio = 'Empenhado · aguardando faturamento';
     } else if (e.status === 'PARCIAL') {
       estagio = 'Faturado em parte';
     } else if (faturamento?.status_entrega !== 'ENTREGUE') {
       estagio = `Faturado${e.numero_nf ? ` (NF ${e.numero_nf})` : ''} · a entregar`;
+      coberto = !!e.faturamento_id && nfsNaLista.has(e.faturamento_id);
     } else if (vencimento) {
       estagio = 'Entregue · aguardando pagamento';
       data = vencimento;
       rotuloData = 'Vencimento';
+      coberto = true;
     } else if (e.faturamento_id && comFinanceiro.has(e.faturamento_id)) {
       continue; // pago
     } else {
@@ -213,6 +233,7 @@ export async function buscarNexo(db: SupabaseClient): Promise<ItemMonitorado[]> 
       valor: num(e.valor_total),
       data,
       rotuloData,
+      coberto,
     });
   }
 

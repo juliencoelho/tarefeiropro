@@ -8,6 +8,12 @@ import { formatDateForInput } from './utils';
 export const diaDe = (date?: Date): string => (date ? formatDateForInput(date) : '');
 export const hojeStr = (): string => formatDateForInput(new Date());
 
+// 'yyyy-MM-dd' → dd/MM, com o ano quando não é o ano corrente (23/06/2025)
+export function dataCurta(dia: string): string {
+  const [ano, mes, d] = dia.slice(0, 10).split('-');
+  return ano === hojeStr().slice(0, 4) ? `${d}/${mes}` : `${d}/${mes}/${ano}`;
+}
+
 export const corPrioridade: Record<TaskPriority, string> = {
   urgente: 'bg-red-500',
   alta: 'bg-orange-500',
