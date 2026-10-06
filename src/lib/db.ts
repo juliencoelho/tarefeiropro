@@ -177,3 +177,14 @@ export function profilePatchToRow(patch: Partial<User>): Row {
   if ('preferences' in patch) row.preferences = patch.preferences ?? null;
   return row;
 }
+
+export function areaPatchToRow(patch: Partial<Area>): Row {
+  const row: Row = {};
+  if ('id' in patch) row.id = patch.id;
+  if ('name' in patch) row.name = patch.name;
+  if ('color' in patch) row.color = patch.color;
+  if ('icon' in patch) row.icon = emptyToNull(patch.icon);
+  if ('position' in patch) row.position = patch.position;
+  if ('archived' in patch) row.archived = patch.archived;
+  return row;
+}

@@ -1,10 +1,10 @@
-import { Bell, Search, Settings, User, Moon, Sun, Menu, LogOut } from 'lucide-react';
+import { Bell, Search, Settings, User, Moon, Sun, Menu, LogOut, Inbox } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { supabase } from '../../lib/supabase';
 
 export function Header() {
-  const { isDarkMode, toggleDarkMode, toggleSidebar, mobileMenuOpen, setMobileMenuOpen, currentUser } = useAppStore();
+  const { isDarkMode, toggleDarkMode, toggleSidebar, mobileMenuOpen, setMobileMenuOpen, setQuickCaptureOpen, currentUser } = useAppStore();
 
   // No celular o botão abre a gaveta; no desktop, recolhe/expande a barra lateral
   const handleMenuClick = () => {
@@ -31,7 +31,7 @@ export function Header() {
           Tarefeiro Pro
         </span>
 
-        <div className="relative hidden md:block">
+        <div className="relative hidden lg:block">
           <Search className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
           <input
             type="text"
@@ -43,6 +43,17 @@ export function Header() {
 
       {/* Right side */}
       <div className="flex items-center gap-1 md:gap-3">
+        {/* Captura rápida (no celular fica no botão flutuante) */}
+        <button
+          onClick={() => setQuickCaptureOpen(true)}
+          className="hidden md:inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          title="Anotar na caixa de entrada (tecla N)"
+        >
+          <Inbox className="w-4 h-4" />
+          Anotar
+          <kbd className="text-[10px] px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-300">N</kbd>
+        </button>
+
         {/* Theme toggle */}
         <button
           onClick={toggleDarkMode}

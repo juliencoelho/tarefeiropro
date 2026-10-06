@@ -19,6 +19,7 @@ import { format, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { createLocalDate, formatDateForInput, formatDateForDisplay } from '../../lib/utils';
 import { toast } from 'sonner';
+import { rotuloPrioridade, rotuloStatus, rotuloTipo } from '../../lib/tarefas';
 
 // Formulário de nova tarefa. O prazo já vem com a data de hoje para agilizar;
 // é calculado na hora em que o modal abre, não quando o app carregou.
@@ -32,6 +33,7 @@ const novoFormulario = () => ({
   startTime: '',
   endTime: '',
   clientId: '',
+  areaId: '',
   isVisibleToAll: true
 });
 
@@ -44,6 +46,7 @@ export function TaskModal() {
     updateTask,
     addTask,
     clients,
+    areas,
     tasks,
     currentUser 
   } = useAppStore();
@@ -81,6 +84,7 @@ export function TaskModal() {
         startTime: currentTask.startTime || '',
         endTime: currentTask.endTime || '',
         clientId: currentTask.clientId || '',
+        areaId: currentTask.areaId || '',
         isVisibleToAll: currentTask.isVisibleToAll
       });
       setIsEditing(false);
@@ -144,7 +148,9 @@ export function TaskModal() {
       updatedAt: new Date(),
       // Limpar horários se for tarefa (não evento)
       startTime: formData.type === 'evento' ? formData.startTime : undefined,
-      endTime: formData.type === 'evento' ? formData.endTime : undefined
+      endTime: formData.type === 'evento' ? formData.endTime : undefined,
+      // Ganhar uma área é a triagem: a tarefa sai da caixa de entrada
+      ...(formData.areaId ? { inInbox: false } : {})
     };
 
     if (currentTask) {
@@ -312,7 +318,7 @@ export function TaskModal() {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-slate-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+        <div className="flex items-center justify-between p-4 md:p-6 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
               {currentTask ? (isEditing ? 'Editar Tarefa' : 'Detalhes da Tarefa') : 'Nova Tarefa'}
@@ -334,9 +340,9 @@ export function TaskModal() {
           </button>
         </div>
 
-        <div className="flex h-[calc(90vh-80px)]">
+        <div className="flex flex-col md:flex-row h-[calc(90vh-80px)] overflow-y-auto md:overflow-hidden">
           {/* Main Content */}
-          <div className="flex-1 p-6 overflow-y-auto">
+          <div className="md:flex-1 p-4 md:p-6 md:overflow-y-auto">
             {isEditing ? (
               <div className="space-y-4">
                 {/* Title */}
@@ -368,7 +374,7 @@ export function TaskModal() {
                 </div>
 
                 {/* Row 1: Status, Priority, Type */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                       Status
@@ -418,7 +424,7 @@ export function TaskModal() {
                 </div>
 
                 {/* Row 2: Date and Time */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                       {currentTask && isExtending ? 'Nova Data de Vencimento (Prorrogação)' : 'Data de Vencimento'}
@@ -497,7 +503,25 @@ export function TaskModal() {
                   </div>
                 )}
 
-                {/* Client */}
+                {/* Área e Cliente */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                    Área
+                  </label>
+                  <select
+                    value={formData.areaId}
+                    onChange={(e) => setFormData({ ...formData, areaId: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-white"
+                  >
+                    <option value="">Sem área</option>
+                    {areas.filter(area => !area.archived || area.id === formData.areaId).map(area => (
+                      <option key={area.id} value={area.id}>
+                        {area.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Cliente
@@ -514,6 +538,7 @@ export function TaskModal() {
                       </option>
                     ))}
                   </select>
+                </div>
                 </div>
 
                 {/* Visibility */}
@@ -562,20 +587,32 @@ export function TaskModal() {
                 </div>
 
                 {/* Meta Info */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Status:</span>
-                      <span className="text-sm text-slate-600 dark:text-slate-300">{currentTask.status}</span>
+                      <span className="text-sm text-slate-600 dark:text-slate-300">{rotuloStatus[currentTask.status] ?? currentTask.status}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Prioridade:</span>
-                      <span className="text-sm text-slate-600 dark:text-slate-300">{currentTask.priority}</span>
+                      <span className="text-sm text-slate-600 dark:text-slate-300">{rotuloPrioridade[currentTask.priority] ?? currentTask.priority}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Tipo:</span>
-                      <span className="text-sm text-slate-600 dark:text-slate-300">{currentTask.type}</span>
+                      <span className="text-sm text-slate-600 dark:text-slate-300">{rotuloTipo[currentTask.type] ?? currentTask.type}</span>
                     </div>
+                    {(() => {
+                      const area = areas.find(a => a.id === currentTask.areaId);
+                      return area ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Área:</span>
+                          <span className="inline-flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
+                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: area.color }} />
+                            {area.name}
+                          </span>
+                        </div>
+                      ) : null;
+                    })()}
                   </div>
                   <div className="space-y-2">
                     {(() => {
@@ -726,7 +763,7 @@ export function TaskModal() {
 
           {/* Sidebar - Comments */}
           {currentTask && (
-            <div className="w-80 border-l border-slate-200 dark:border-slate-700 p-6 overflow-y-auto">
+            <div className="w-full md:w-80 shrink-0 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-700 p-4 md:p-6 md:overflow-y-auto">
               <h4 className="font-medium text-slate-900 dark:text-white mb-4">Comentários</h4>
               
               <div className="space-y-4 mb-4">

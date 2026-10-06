@@ -6,7 +6,7 @@ import { Task, Client, Area, User, ViewMode, AgendaView, TaskStatus, UserInvite,
 import { supabase } from '../lib/supabase';
 import {
   rowToTask, taskPatchToRow, rowToClient, clientPatchToRow,
-  rowToArea, rowToProfile, profilePatchToRow,
+  rowToArea, areaPatchToRow, rowToProfile, profilePatchToRow,
 } from '../lib/db';
 
 // crypto.randomUUID só existe em contexto seguro (https/localhost);
@@ -43,6 +43,7 @@ interface AppState {
   isDarkMode: boolean;
   sidebarCollapsed: boolean;
   mobileMenuOpen: boolean;
+  isQuickCaptureOpen: boolean;
   
   // User Management UI State
   isUserModalOpen: boolean;
@@ -61,6 +62,9 @@ interface AppState {
   deleteTask: (taskId: string) => void;
   updateTaskStatus: (taskId: string, status: TaskStatus) => void;
   
+  addArea: (name: string, color: string) => void;
+  updateArea: (areaId: string, updates: Partial<Area>) => void;
+
   setClients: (clients: Client[]) => void;
   addClient: (client: Omit<Client, 'id'>) => void;
   updateClient: (clientId: string, updates: Partial<Client>) => void;
@@ -106,6 +110,7 @@ interface AppState {
   toggleDarkMode: () => void;
   toggleSidebar: () => void;
   setMobileMenuOpen: (open: boolean) => void;
+  setQuickCaptureOpen: (open: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -137,6 +142,7 @@ export const useAppStore = create<AppState>()(
   isDarkMode: false,
   sidebarCollapsed: false,
   mobileMenuOpen: false,
+  isQuickCaptureOpen: false,
   
   // User Management UI State
   isUserModalOpen: false,
@@ -261,6 +267,21 @@ export const useAppStore = create<AppState>()(
       )
     }));
     persistir(supabase.from('tasks').update(taskPatchToRow(patch)).eq('id', taskId), get);
+  },
+
+  // Actions para áreas
+  addArea: (name, color) => {
+    const position = Math.max(-1, ...get().areas.map(a => a.position)) + 1;
+    const newArea: Area = { id: novoId(), name, color, position, archived: false, createdAt: new Date() };
+    set((state) => ({ areas: [...state.areas, newArea] }));
+    persistir(supabase.from('areas').insert(areaPatchToRow(newArea)), get);
+  },
+
+  updateArea: (areaId, updates) => {
+    set((state) => ({
+      areas: state.areas.map(area => area.id === areaId ? { ...area, ...updates } : area)
+    }));
+    persistir(supabase.from('areas').update(areaPatchToRow(updates)).eq('id', areaId), get);
   },
 
   // Actions para clientes
@@ -499,7 +520,8 @@ export const useAppStore = create<AppState>()(
   setTaskModalOpen: (open) => set({ isTaskModalOpen: open }),
   toggleDarkMode: () => set((state) => ({ isDarkMode: !state.isDarkMode })),
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
-  setMobileMenuOpen: (open) => set({ mobileMenuOpen: open })
+  setMobileMenuOpen: (open) => set({ mobileMenuOpen: open }),
+  setQuickCaptureOpen: (open) => set({ isQuickCaptureOpen: open })
     }),
     {
       name: 'tarefeiro-pro-store',

@@ -4,6 +4,9 @@ import { Loader2 } from 'lucide-react';
 import { Toaster } from 'sonner';
 import { Layout } from './components/layout/Layout';
 import { LoginPage } from './components/auth/LoginPage';
+import HojePage from './pages/HojePage';
+import EntradaPage from './pages/EntradaPage';
+import AreaPage from './pages/AreaPage';
 import Dashboard from './pages/Dashboard';
 import KanbanPage from './pages/KanbanPage';
 import ListPage from './pages/ListPage';
@@ -80,7 +83,10 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Layout />}>
-            <Route index element={<Dashboard />} />
+            <Route index element={<HojePage />} />
+            <Route path="entrada" element={<EntradaPage />} />
+            <Route path="area/:id" element={<AreaPage />} />
+            <Route path="painel" element={<Dashboard />} />
             <Route path="kanban" element={<KanbanPage />} />
             <Route path="lista" element={<ListPage />} />
             <Route path="agenda" element={<AgendaPage />} />

@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { TaskModal } from '../modals/TaskModal';
+import { QuickCapture } from '../tasks/QuickCapture';
 import { useAppStore } from '../../store/useAppStore';
 import { cn } from '../../lib/utils';
 
@@ -31,6 +32,7 @@ export function Layout() {
         </main>
       </div>
       <TaskModal />
+      <QuickCapture />
     </div>
   );
 }
