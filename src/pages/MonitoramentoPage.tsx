@@ -119,8 +119,8 @@ function MonitoramentoPage() {
       ))}
 
       <div className="flex gap-3 overflow-x-auto sem-barra pb-1 -mx-4 px-4 md:mx-0 md:px-0 lg:grid lg:grid-cols-5 lg:overflow-visible">
-        <Cartao titulo="A receber · Nexo" valor={brl.format(soma.receberNexo.valor)} detalhe={plural(soma.receberNexo.qtd, 'parcela em aberto', 'parcelas em aberto')} />
-        <Cartao titulo="Títulos em aberto · BasePro" valor={brl.format(soma.titulosBasePro.valor)} detalhe={`${plural(soma.titulosBasePro.qtd, 'parcela', 'parcelas')} · clientes → representada`} />
+        <Cartao titulo="A receber · Hospicare" valor={brl.format(soma.receberNexo.valor)} detalhe={`${plural(soma.receberNexo.qtd, 'parcela em aberto', 'parcelas em aberto')} · Nexo`} />
+        <Cartao titulo="Títulos da Fernandes" valor={brl.format(soma.titulosBasePro.valor)} detalhe={`${plural(soma.titulosBasePro.qtd, 'parcela', 'parcelas')} · base da comissão · BasePro`} />
         <Cartao titulo="Valor empenhado em aberto" valor={brl.format(soma.empenhos.valor)} detalhe={plural(soma.empenhos.qtd, 'empenho', 'empenhos')} />
         <Cartao titulo="NFs a entregar" valor={String(soma.nfs.qtd)} detalhe={brl.format(soma.nfs.valor)} />
         <Cartao titulo="Aguardando retorno" valor={String(soma.retorno.qtd)} detalhe="pessoas e respostas" />
@@ -195,9 +195,9 @@ function MonitoramentoPage() {
       )}
 
       <p className="text-xs text-slate-500 dark:text-slate-300">
-        Os totais não se somam entre si. A receber do Nexo é o saldo que os clientes devem à empresa; títulos do BasePro
-        são o que os clientes devem à representada (a comissão sai do que for pago); empenho é o valor empenhado ainda
-        não recebido; NFs é o valor das notas ainda não entregues.
+        Os totais não se somam entre si. A receber da Hospicare (Nexo) é o que os clientes devem à sua empresa; títulos
+        da Fernandes (BasePro) são o que os clientes devem à representada, e a sua comissão sai do que for pago; empenho
+        é o valor empenhado ainda não recebido; NFs é o valor das notas ainda não entregues.
       </p>
     </div>
   );
