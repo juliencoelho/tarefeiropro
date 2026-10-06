@@ -47,3 +47,6 @@ ehthumbs.db
 *.temp
 # Claude Code (permissões locais)
 .claude/settings.local.json
+
+# Skill do Cowork (descreve as empresas; fica fora do repositório público)
+cowork-skill/
