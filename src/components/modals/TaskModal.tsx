@@ -18,6 +18,22 @@ import { Task, TaskStatus, TaskPriority, TaskType } from '../../types';
 import { format, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { createLocalDate, formatDateForInput, formatDateForDisplay } from '../../lib/utils';
+import { toast } from 'sonner';
+
+// Formulário de nova tarefa. O prazo já vem com a data de hoje para agilizar;
+// é calculado na hora em que o modal abre, não quando o app carregou.
+const novoFormulario = () => ({
+  title: '',
+  description: '',
+  status: 'para_fazer' as TaskStatus,
+  priority: 'media' as TaskPriority,
+  type: 'tarefa' as TaskType,
+  dueDate: formatDateForInput(new Date()),
+  startTime: '',
+  endTime: '',
+  clientId: '',
+  isVisibleToAll: true
+});
 
 export function TaskModal() {
   const { 
@@ -37,18 +53,7 @@ export function TaskModal() {
   const [searchParams] = useSearchParams();
 
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    status: 'para_fazer' as TaskStatus,
-    priority: 'media' as TaskPriority,
-    type: 'tarefa' as TaskType,
-    dueDate: '',
-    startTime: '',
-    endTime: '',
-    clientId: '',
-    isVisibleToAll: true
-  });
+  const [formData, setFormData] = useState(novoFormulario);
 
   const [newComment, setNewComment] = useState('');
   const [newSubtask, setNewSubtask] = useState('');
@@ -81,18 +86,7 @@ export function TaskModal() {
       setIsEditing(false);
     } else {
       // Nova tarefa
-      setFormData({
-        title: '',
-        description: '',
-        status: 'para_fazer',
-        priority: 'media',
-        type: 'tarefa',
-        dueDate: '',
-        startTime: '',
-        endTime: '',
-        clientId: '',
-        isVisibleToAll: true
-      });
+      setFormData(novoFormulario());
       setIsEditing(true);
     }
   }, [currentTask]);
@@ -100,18 +94,7 @@ export function TaskModal() {
   // Reset form when modal opens for new task
   useEffect(() => {
     if (isTaskModalOpen && !selectedTask) {
-      setFormData({
-        title: '',
-        description: '',
-        status: 'para_fazer',
-        priority: 'media',
-        type: 'tarefa',
-        dueDate: '',
-        startTime: '',
-        endTime: '',
-        clientId: '',
-        isVisibleToAll: true
-      });
+      setFormData(novoFormulario());
       setIsEditing(true);
       setNewComment('');
       setNewSubtask('');
@@ -145,18 +128,7 @@ export function TaskModal() {
     setExtensionDate('');
     setExtensionReason('');
     // Reset form data to initial state
-    setFormData({
-      title: '',
-      description: '',
-      status: 'para_fazer',
-      priority: 'media',
-      type: 'tarefa',
-      dueDate: '',
-      startTime: '',
-      endTime: '',
-      clientId: '',
-      isVisibleToAll: true
-    });
+    setFormData(novoFormulario());
     // Remove task query param from URL when closing
     navigate({ pathname: location.pathname, search: '' });
   };
@@ -209,6 +181,9 @@ export function TaskModal() {
         extensionCount: 0
       };
       addTask(newTask);
+      toast.success('Tarefa criada');
+      handleClose();
+      return;
     }
 
     setIsEditing(false);
