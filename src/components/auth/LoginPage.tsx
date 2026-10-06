@@ -38,7 +38,8 @@ export function LoginPage() {
         email,
         password,
         options: {
-          emailRedirectTo: window.location.origin,
+          // Com a barra final, o endereço casa com o curinga `/**` das Redirect URLs do Supabase
+          emailRedirectTo: `${window.location.origin}/`,
           data: { name: name.trim() || undefined },
         },
       });
