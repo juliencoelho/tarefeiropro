@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
@@ -5,11 +6,19 @@ import { TaskModal } from '../modals/TaskModal';
 import { QuickCapture } from '../tasks/QuickCapture';
 import { useAppStore } from '../../store/useAppStore';
 import { useAtualizarMonitoramento } from '../../hooks/useItensMonitorados';
+import { useEmails } from '../../store/useEmails';
 import { cn } from '../../lib/utils';
 
 export function Layout() {
   const { sidebarCollapsed, mobileMenuOpen, setMobileMenuOpen } = useAppStore();
   useAtualizarMonitoramento();
+
+  // E-mails: carga inicial e tempo real (o robô grava no servidor a cada 10 min)
+  const { carregar: carregarEmails, ouvir: ouvirEmails } = useEmails();
+  useEffect(() => {
+    carregarEmails();
+    return ouvirEmails();
+  }, [carregarEmails, ouvirEmails]);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex">

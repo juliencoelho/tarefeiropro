@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { AlarmClock, ArrowRight, CalendarClock, CalendarX, Inbox, Sun } from 'lucide-react';
+import { AlarmClock, ArrowRight, CalendarClock, CalendarX, Inbox, Mail, Sun } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { TaskRow } from '../components/tasks/TaskRow';
 import { CampoRapido } from '../components/tasks/CampoRapido';
@@ -9,6 +9,7 @@ import { ListaVazia, Secao } from '../components/tasks/Secao';
 import { caixaDeEntrada, hojeStr, novaTarefa, organizarHoje } from '../lib/tarefas';
 import { useItensMonitorados } from '../hooks/useItensMonitorados';
 import { LinhaMonitorada } from '../components/monitoramento/LinhaMonitorada';
+import { useEmails } from '../store/useEmails';
 
 function HojePage() {
   const { tasks, currentUser, addTask, updateTask } = useAppStore();
@@ -16,6 +17,7 @@ function HojePage() {
   const { compromissos, planejadas, concluidas, paraConsiderar } = organizarHoje(tasks, hoje);
   const naCaixa = caixaDeEntrada(tasks).length;
   const paraCobrar = useItensMonitorados().grupos.atencao;
+  const emailsAcao = useEmails((s) => s.emails.filter((e) => e.categoria === 'acao' && !e.lido && !e.tarefa_id).length);
   const totalDoDia = planejadas.length + concluidas.length;
 
   const dataPorExtenso = format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR });
@@ -38,6 +40,19 @@ function HojePage() {
           <span className="inline-flex items-center gap-2">
             <Inbox className="w-4 h-4" />
             {naCaixa === 1 ? '1 item na caixa de entrada para triar' : `${naCaixa} itens na caixa de entrada para triar`}
+          </span>
+          <ArrowRight className="w-4 h-4 shrink-0" />
+        </Link>
+      )}
+
+      {emailsAcao > 0 && (
+        <Link
+          to="/emails"
+          className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+        >
+          <span className="inline-flex items-center gap-2">
+            <Mail className="w-4 h-4" />
+            {emailsAcao === 1 ? '1 e-mail pedindo ação' : `${emailsAcao} e-mails pedindo ação`}
           </span>
           <ArrowRight className="w-4 h-4 shrink-0" />
         </Link>

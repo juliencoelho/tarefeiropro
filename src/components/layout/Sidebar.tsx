@@ -11,18 +11,21 @@ import {
   ChevronRight,
   Sun,
   Inbox,
-  Radar
+  Radar,
+  Mail
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { caixaDeEntrada, coresDeArea, pendenciasPorArea } from '../../lib/tarefas';
 import { useItensMonitorados } from '../../hooks/useItensMonitorados';
+import { useEmails } from '../../store/useEmails';
 
 const menuItems = [
   { icon: Sun, label: 'Hoje', path: '/' },
   { icon: Inbox, label: 'Caixa de entrada', path: '/entrada' },
   { icon: Radar, label: 'Monitoramento', path: '/monitoramento' },
+  { icon: Mail, label: 'E-mails', path: '/emails' },
   { icon: Calendar, label: 'Agenda', path: '/agenda' },
   { icon: Kanban, label: 'Kanban', path: '/kanban' },
   { icon: List, label: 'Lista', path: '/lista' },
@@ -45,6 +48,8 @@ export function Sidebar() {
 
   const naCaixa = caixaDeEntrada(tasks).length;
   const paraCobrar = useItensMonitorados().grupos.atencao.length;
+  // E-mails que pedem ação e ainda não foram lidos nem viraram tarefa
+  const emailsPendentes = useEmails((s) => s.emails.filter((e) => e.categoria === 'acao' && !e.lido && !e.tarefa_id).length);
   const pendencias = pendenciasPorArea(tasks);
   const areasAtivas = areas.filter(a => !a.archived);
 
@@ -109,7 +114,11 @@ export function Sidebar() {
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path;
-            const contador = item.path === '/entrada' ? naCaixa : item.path === '/monitoramento' ? paraCobrar : 0;
+            const contador =
+              item.path === '/entrada' ? naCaixa
+                : item.path === '/monitoramento' ? paraCobrar
+                  : item.path === '/emails' ? emailsPendentes
+                    : 0;
             const corContador = item.path === '/monitoramento' ? 'bg-amber-500' : 'bg-blue-600';
 
             return (

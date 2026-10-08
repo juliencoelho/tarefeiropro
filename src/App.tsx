@@ -8,6 +8,7 @@ import HojePage from './pages/HojePage';
 import EntradaPage from './pages/EntradaPage';
 import AreaPage from './pages/AreaPage';
 import MonitoramentoPage from './pages/MonitoramentoPage';
+import EmailsPage from './pages/EmailsPage';
 import Dashboard from './pages/Dashboard';
 import KanbanPage from './pages/KanbanPage';
 import ListPage from './pages/ListPage';
@@ -88,6 +89,7 @@ function App() {
             <Route path="entrada" element={<EntradaPage />} />
             <Route path="area/:id" element={<AreaPage />} />
             <Route path="monitoramento" element={<MonitoramentoPage />} />
+            <Route path="emails" element={<EmailsPage />} />
             <Route path="painel" element={<Dashboard />} />
             <Route path="kanban" element={<KanbanPage />} />
             <Route path="lista" element={<ListPage />} />
