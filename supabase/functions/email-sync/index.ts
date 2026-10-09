@@ -46,6 +46,25 @@ type Mensagem = Record<string, any>;
 const pessoas = (lista: Mensagem[] | undefined) =>
   (lista ?? []).map((p) => ({ nome: p.emailAddress?.name ?? null, endereco: p.emailAddress?.address ?? null }));
 
+// E-mail de propaganda vem com centenas de caracteres invisíveis de enchimento: tira e junta os espaços
+function limparTexto(texto: string | null | undefined): string | null {
+  if (!texto) return null;
+  return texto
+    .replace(/[\u200B-\u200D\u2060\uFEFF\u034F\u00AD]/g, '')
+    .replace(/[ \t\u00A0]+/g, ' ')
+    .replace(/ *\r?\n */g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+async function listarAnexos(conta: Conta, idExterno: string, token: string) {
+  const res = await graph(`https://graph.microsoft.com/v1.0/me/messages/${encodeURIComponent(idExterno)}/attachments?$select=name,size,contentType`, token);
+  if (!res.ok) return;
+  const { value } = await res.json();
+  const anexos = (value ?? []).map((a: Mensagem) => ({ nome: a.name, tamanho: a.size, tipo: a.contentType }));
+  await db.from('emails').update({ anexos }).eq('conta_id', conta.id).eq('id_externo', idExterno);
+}
+
 async function graph(url: string, token: string) {
   return fetch(url, {
     headers: {
@@ -132,7 +151,7 @@ async function gravarPagina(conta: Conta, pasta: Pasta, mensagens: Mensagem[], r
   const porExterno = new Map(gravadas.map((g) => [g.id_externo, g.id]));
   const corpos = completas
     .filter((m) => porExterno.has(m.id))
-    .map((m) => ({ email_id: porExterno.get(m.id)!, user_id: conta.user_id, texto: m.body?.content ?? null }));
+    .map((m) => ({ email_id: porExterno.get(m.id)!, user_id: conta.user_id, texto: limparTexto(m.body?.content) }));
   if (corpos.length) {
     const { error } = await db.from('email_corpos').upsert(corpos, { onConflict: 'email_id' });
     if (error) throw new Error(`Não consegui gravar o corpo dos e-mails: ${error.message}`);
@@ -142,11 +161,7 @@ async function gravarPagina(conta: Conta, pasta: Pasta, mensagens: Mensagem[], r
   for (const m of completas) {
     if (!m.hasAttachments || jaExiste.has(m.id) || anexosRestantes.n <= 0) continue;
     anexosRestantes.n--;
-    const res = await graph(`https://graph.microsoft.com/v1.0/me/messages/${encodeURIComponent(m.id)}/attachments?$select=name,size,contentType`, token);
-    if (!res.ok) continue;
-    const { value } = await res.json();
-    const anexos = (value ?? []).map((a: Mensagem) => ({ nome: a.name, tamanho: a.size, tipo: a.contentType }));
-    await db.from('emails').update({ anexos }).eq('conta_id', conta.id).eq('id_externo', m.id);
+    await listarAnexos(conta, m.id, token);
   }
 
   for (const m of completas) {
@@ -221,6 +236,14 @@ async function sincronizarConta(conta: Conta, inicio: number) {
       if (!emDia) status = 'parcial';
     }
     if (status === 'parcial') detalhe = 'Primeira carga grande: continua na próxima rodada.';
+
+    // Sobrou cota de anexos: completa a lista dos e-mails que ficaram para trás (primeira carga)
+    if (anexos.n > 0 && Date.now() - inicio < ORCAMENTO_MS) {
+      const { data: semLista } = await db.from('emails').select('id_externo')
+        .eq('conta_id', conta.id).eq('tem_anexos', true).eq('anexos', '[]').is('removido_em', null)
+        .order('recebido_em', { ascending: false }).limit(anexos.n);
+      for (const e of semLista ?? []) await listarAnexos(conta, e.id_externo, tokens.access_token);
+    }
     await db.from('email_contas').update({ ultimo_sync_em: new Date().toISOString(), ultimo_erro: null }).eq('id', conta.id);
   } catch (e) {
     status = 'erro';

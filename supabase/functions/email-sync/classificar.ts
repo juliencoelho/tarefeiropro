@@ -18,9 +18,10 @@ export interface Classificavel {
   sinalizado: boolean;
 }
 
-// Assunto que costuma pedir algo: dinheiro, documento, prazo, venda/compra pública
+// Assunto que costuma pedir algo: dinheiro, documento, prazo, venda/compra pública.
+// Multa, protesto e pendência entram mesmo vindo de remetente de massa: esconder um custa caro.
 const PALAVRAS_ACAO =
-  /\b(nf-?e|nota fiscal|boleto|fatura|vencimento|vence (hoje|amanh[aã])|cobran[cç]a|pagamento pendente|pix|cota[cç][aã]o|pedido de compra|empenho|preg[aã]o|licita[cç][aã]o|edital|contrato|proposta|or[cç]amento|prazo|urgente|reuni[aã]o|convite|assinatura|certid[aã]o|intima[cç][aã]o|notifica[cç][aã]o extrajudicial)\b/i;
+  /\b(nf-?e|nota fiscal|boleto|fatura|vencimento|vence (hoje|amanh[aã])|vencid[oa]s?|cobran[cç]a|pagamento pendente|pend[eê]ncias?|pix|cota[cç][aã]o|pedido de compra|empenho|preg[aã]o|licita[cç][aã]o|edital|contrato|proposta|or[cç]amento|prazo|urgente|reuni[aã]o|convite|assinatura|certid[aã]o|intima[cç][aã]o|notifica[cç][aã]o extrajudicial|protestos?|cart[oó]rio|multas?|autua[cç](?:[aã]o|[oõ]es)|infra[cç](?:[aã]o|[oõ]es)|indica[cç][aã]o d[eo] condutor)\b/i;
 
 // Remetentes automáticos e de massa
 const REMETENTE_AUTOMATICO = /(no-?reply|nao-?responda|newsletter|news@|marketing|promo|ofertas|mailing|mailer|bounce|notifica)/i;
