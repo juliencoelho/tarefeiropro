@@ -2,12 +2,12 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import type { PostgrestError } from '@supabase/supabase-js';
 import { toast } from 'sonner';
-import { Task, Client, Area, User, MonitoringItem, ViewMode, AgendaView, TaskStatus, UserInvite, Notification, UserSession, UserFilter } from '../types';
+import { Task, TaskLink, TipoVinculo, Client, Area, User, MonitoringItem, ViewMode, AgendaView, TaskStatus, UserInvite, Notification, UserSession, UserFilter } from '../types';
 import { supabase } from '../lib/supabase';
 import {
   rowToTask, taskPatchToRow, rowToClient, clientPatchToRow,
   rowToArea, areaPatchToRow, rowToProfile, profilePatchToRow,
-  rowToMonitoring, monitoringPatchToRow,
+  rowToMonitoring, monitoringPatchToRow, rowToLink,
 } from '../lib/db';
 
 // crypto.randomUUID só existe em contexto seguro (https/localhost);
@@ -28,6 +28,7 @@ interface AppState {
   userId: string | null;
   dataLoaded: boolean;
   tasks: Task[];
+  taskLinks: TaskLink[];
   clients: Client[];
   areas: Area[];
   monitoringItems: MonitoringItem[];
@@ -59,11 +60,15 @@ interface AppState {
 
   // Actions
   setTasks: (tasks: Task[]) => void;
-  addTask: (task: Omit<Task, 'id'>) => void;
+  addTask: (task: Omit<Task, 'id'>) => string; // devolve o id da tarefa criada
   updateTask: (taskId: string, updates: Partial<Task>) => void;
   deleteTask: (taskId: string) => void;
   updateTaskStatus: (taskId: string, status: TaskStatus) => void;
-  
+
+  // Correlação: com 'depende_de', taskId só deve ser feita depois de outraId
+  relacionarTarefas: (taskId: string, outraId: string, tipo: TipoVinculo) => void;
+  desfazerRelacao: (linkId: string) => void;
+
   addArea: (name: string, color: string) => void;
   addMonitoringItem: (item: Omit<MonitoringItem, 'id' | 'createdAt'>) => void;
   updateMonitoringItem: (itemId: string, updates: Partial<MonitoringItem>) => void;
@@ -129,6 +134,7 @@ export const useAppStore = create<AppState>()(
   userId: null,
   dataLoaded: false,
   tasks: [],
+  taskLinks: [],
   clients: [],
   areas: [],
   monitoringItems: [],
@@ -166,14 +172,15 @@ export const useAppStore = create<AppState>()(
   
   // Carga inicial: perfil, áreas, clientes e tarefas do usuário logado
   loadAll: async (userId) => {
-    const [profileRes, areasRes, clientsRes, tasksRes, monitoringRes] = await Promise.all([
+    const [profileRes, areasRes, clientsRes, tasksRes, monitoringRes, linksRes] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', userId).single(),
       supabase.from('areas').select('*').order('position'),
       supabase.from('clients').select('*').order('name'),
       supabase.from('tasks').select('*').order('created_at'),
       supabase.from('monitoring_items').select('*').order('created_at'),
+      supabase.from('task_links').select('*').order('created_at'),
     ]);
-    const error = profileRes.error || areasRes.error || clientsRes.error || tasksRes.error || monitoringRes.error;
+    const error = profileRes.error || areasRes.error || clientsRes.error || tasksRes.error || monitoringRes.error || linksRes.error;
     if (error) {
       console.error('Erro ao carregar dados do Supabase', error);
       toast.error('Não foi possível carregar seus dados. Verifique a conexão.');
@@ -186,6 +193,7 @@ export const useAppStore = create<AppState>()(
       areas: areasRes.data.map(rowToArea),
       clients: clientsRes.data.map(rowToClient),
       tasks: tasksRes.data.map((row) => rowToTask(row, owner)),
+      taskLinks: linksRes.data.map(rowToLink),
       monitoringItems: monitoringRes.data.map(rowToMonitoring),
       dataLoaded: true,
     });
@@ -201,6 +209,11 @@ export const useAppStore = create<AppState>()(
         set((state) => payload.eventType === 'DELETE'
           ? { tasks: state.tasks.filter((t) => t.id !== payload.old.id) }
           : { tasks: upsertById(state.tasks, rowToTask(payload.new, state.currentUser)) });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_links' }, (payload) => {
+        set((state) => payload.eventType === 'DELETE'
+          ? { taskLinks: state.taskLinks.filter((l) => l.id !== payload.old.id) }
+          : { taskLinks: upsertById(state.taskLinks, rowToLink(payload.new)) });
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, (payload) => {
         set((state) => payload.eventType === 'DELETE'
@@ -231,6 +244,7 @@ export const useAppStore = create<AppState>()(
     userId: null,
     dataLoaded: false,
     tasks: [],
+    taskLinks: [],
     clients: [],
     areas: [],
     monitoringItems: [],
@@ -246,6 +260,7 @@ export const useAppStore = create<AppState>()(
     const newTask = { ...task, id: novoId() } as Task;
     set((state) => ({ tasks: [...state.tasks, newTask] }));
     persistir(supabase.from('tasks').insert(taskPatchToRow(newTask)), get);
+    return newTask.id;
   },
 
   updateTask: (taskId, updates) => {
@@ -263,7 +278,9 @@ export const useAppStore = create<AppState>()(
 
   deleteTask: (taskId) => {
     set((state) => ({
-      tasks: state.tasks.filter(task => task.id !== taskId)
+      tasks: state.tasks.filter(task => task.id !== taskId),
+      // No banco os vínculos somem junto (on delete cascade)
+      taskLinks: state.taskLinks.filter(l => l.taskId !== taskId && l.outraId !== taskId)
     }));
     persistir(supabase.from('tasks').delete().eq('id', taskId), get);
   },
@@ -285,6 +302,29 @@ export const useAppStore = create<AppState>()(
       )
     }));
     persistir(supabase.from('tasks').update(taskPatchToRow(patch)).eq('id', taskId), get);
+  },
+
+  // Um vínculo por par: relacionar de novo troca o tipo do vínculo existente
+  relacionarTarefas: (taskId, outraId, tipo) => {
+    if (taskId === outraId) return;
+    const doPar = (l: TaskLink) =>
+      (l.taskId === taskId && l.outraId === outraId) || (l.taskId === outraId && l.outraId === taskId);
+    const anterior = get().taskLinks.find(doPar);
+    const novo: TaskLink = { id: novoId(), taskId, outraId, tipo, createdAt: new Date() };
+    set((state) => ({ taskLinks: [...state.taskLinks.filter((l) => !doPar(l)), novo] }));
+    const gravar = async () => {
+      if (anterior) {
+        const { error } = await supabase.from('task_links').delete().eq('id', anterior.id);
+        if (error) return { error };
+      }
+      return supabase.from('task_links').insert({ id: novo.id, task_id: taskId, outra_id: outraId, tipo });
+    };
+    persistir(gravar(), get);
+  },
+
+  desfazerRelacao: (linkId) => {
+    set((state) => ({ taskLinks: state.taskLinks.filter((l) => l.id !== linkId) }));
+    persistir(supabase.from('task_links').delete().eq('id', linkId), get);
   },
 
   // Actions para áreas

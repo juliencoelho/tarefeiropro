@@ -28,7 +28,7 @@ const botao =
   'inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors';
 
 function LinhaEmail({ email }: { email: Email }) {
-  const { currentUser, addTask, addMonitoringItem, tasks } = useAppStore();
+  const { currentUser, addTask, addMonitoringItem } = useAppStore();
   const { mudarCategoria, marcarTarefa, criarRegraRemetente, lerCorpo } = useEmails();
   const [aberto, setAberto] = useState(false);
   const [corpo, setCorpo] = useState<string | null>(null);
@@ -48,10 +48,10 @@ function LinhaEmail({ email }: { email: Email }) {
   };
 
   const virarTarefa = () => {
-    const antes = new Set(tasks.map((t) => t.id));
-    addTask(novaTarefa(email.assunto || '(sem assunto)', currentUser, { inInbox: true, description: descricao }));
-    const nova = useAppStore.getState().tasks.find((t) => !antes.has(t.id));
-    if (nova) marcarTarefa(email.id, nova.id);
+    const id = addTask(novaTarefa(email.assunto || '(sem assunto)', currentUser, {
+      inInbox: true, description: descricao, source: 'email', origemRef: email.id,
+    }));
+    marcarTarefa(email.id, id);
     toast.success('Virou tarefa na caixa de entrada');
   };
 

@@ -1,8 +1,16 @@
-import { Building2, Calendar, Check, Clock, History, Sparkles } from 'lucide-react';
-import { Task } from '../../types';
+import { Building2, Calendar, CalendarCheck, Check, Clock, History, LifeBuoy, Link2, ListTodo, Mail, Sparkles } from 'lucide-react';
+import { OrigemTarefa, Task } from '../../types';
 import { useAppStore } from '../../store/useAppStore';
 import { cn } from '../../lib/utils';
-import { corPrioridade, diaDe, hojeStr, rotuloPrioridade } from '../../lib/tarefas';
+import { corPrioridade, diaDe, hojeStr, rotuloOrigem, rotuloPrioridade, vinculosDe } from '../../lib/tarefas';
+
+const iconeOrigem: Partial<Record<OrigemTarefa, typeof Mail>> = {
+  cowork: Sparkles,
+  basepro: CalendarCheck,
+  nexo: LifeBuoy,
+  email: Mail,
+  todo: ListTodo,
+};
 
 interface TaskRowProps {
   task: Task;
@@ -24,8 +32,11 @@ function rotuloDoPrazo(prazo: string, hoje: string): string {
 }
 
 export function TaskRow({ task, acoes, rodape, mostrarArea = true }: TaskRowProps) {
-  const { areas, clients, updateTaskStatus, setSelectedTask, setTaskModalOpen } = useAppStore();
+  const { areas, clients, tasks, taskLinks, updateTaskStatus, setSelectedTask, setTaskModalOpen } = useAppStore();
   const hoje = hojeStr();
+  const vinculos = vinculosDe(task.id, taskLinks, tasks);
+  const esperando = vinculos.filter((v) => v.sentido === 'depende' && v.outra.status !== 'feito').length;
+  const IconeOrigem = task.source ? iconeOrigem[task.source] : undefined;
   const feita = task.status === 'feito';
   const prazo = diaDe(task.dueDate);
   const atrasada = !feita && prazo !== '' && prazo < hoje;
@@ -106,10 +117,21 @@ export function TaskRow({ task, acoes, rodape, mostrarArea = true }: TaskRowProp
               {rotuloPrioridade[task.priority]}
             </span>
           )}
-          {task.source === 'cowork' && (
-            <span className="inline-flex items-center gap-1" title="Criada pelo assistente">
-              <Sparkles className="w-3.5 h-3.5" />
-              Cowork
+          {IconeOrigem && task.source && (
+            <span className="inline-flex items-center gap-1" title={task.source === 'cowork' ? 'Criada pelo assistente' : 'De onde a tarefa veio'}>
+              <IconeOrigem className="w-3.5 h-3.5" />
+              {rotuloOrigem[task.source]}
+            </span>
+          )}
+          {!feita && esperando > 0 ? (
+            <span className="inline-flex items-center gap-1 text-amber-700 dark:text-amber-300" title="Depende de outra tarefa que ainda não foi feita">
+              <Link2 className="w-3.5 h-3.5" />
+              {esperando === 1 ? 'Depende de 1 tarefa' : `Depende de ${esperando} tarefas`}
+            </span>
+          ) : vinculos.length > 0 && (
+            <span className="inline-flex items-center gap-1" title="Tarefas relacionadas">
+              <Link2 className="w-3.5 h-3.5" />
+              {vinculos.length === 1 ? '1 relacionada' : `${vinculos.length} relacionadas`}
             </span>
           )}
         </div>

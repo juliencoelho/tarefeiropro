@@ -19,7 +19,8 @@ import { format, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { createLocalDate, formatDateForInput, formatDateForDisplay } from '../../lib/utils';
 import { toast } from 'sonner';
-import { rotuloPrioridade, rotuloStatus, rotuloTipo } from '../../lib/tarefas';
+import { rotuloOrigem, rotuloPrioridade, rotuloStatus, rotuloTipo } from '../../lib/tarefas';
+import { Relacionadas } from '../tasks/Relacionadas';
 
 // Formulário de nova tarefa. O prazo já vem com a data de hoje para agilizar;
 // é calculado na hora em que o modal abre, não quando o app carregou.
@@ -613,6 +614,12 @@ export function TaskModal() {
                         </div>
                       ) : null;
                     })()}
+                    {currentTask.source && rotuloOrigem[currentTask.source] && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Veio de:</span>
+                        <span className="text-sm text-slate-600 dark:text-slate-300">{rotuloOrigem[currentTask.source]}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
                     {(() => {
@@ -647,6 +654,8 @@ export function TaskModal() {
                     )}
                   </div>
                 </div>
+
+                <Relacionadas task={currentTask} />
 
                 {/* Subtasks */}
                 <div>

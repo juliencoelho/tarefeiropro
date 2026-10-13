@@ -1,7 +1,10 @@
 import { create } from 'zustand';
+import { toast } from 'sonner';
 import { Sistema } from '../types';
-import { clienteDo, conectar, desconectar, listaSistemas } from '../lib/sistemas';
+import { clienteDo, configSistemas, conectar, desconectar, listaSistemas } from '../lib/sistemas';
 import { buscarBasePro, buscarNexo, ItemMonitorado } from '../lib/monitoramento';
+import { espelharSistema } from '../lib/espelho';
+import { useAppStore } from './useAppStore';
 
 interface EstadoSistema {
   email: string | null; // null = não conectado
@@ -30,12 +33,30 @@ async function lerSistema(sistema: Sistema): Promise<EstadoSistema> {
   const email = data.session?.user.email ?? null;
   if (!email) return vazio();
 
-  try {
-    const itens = await buscadores[sistema](db);
-    return { email, itens, atualizadoEm: new Date() };
-  } catch (e) {
-    console.error(`Erro ao ler ${sistema}`, e);
+  const [monitorados, espelho] = await Promise.allSettled([buscadores[sistema](db), trazerTarefas(sistema)]);
+  if (espelho.status === 'rejected') console.error(`Erro ao trazer tarefas do ${sistema}`, espelho.reason);
+  if (monitorados.status === 'rejected') {
+    console.error(`Erro ao ler ${sistema}`, monitorados.reason);
+    const e = monitorados.reason;
     return { email, itens: [], erro: e instanceof Error ? e.message : String(e) };
+  }
+  return {
+    email,
+    itens: monitorados.value,
+    atualizadoEm: new Date(),
+    erro: espelho.status === 'rejected' ? String(espelho.reason?.message ?? espelho.reason) : undefined,
+  };
+}
+
+// Agenda do BasePro e chamados do Nexo viram tarefas do Tarefeiro (ver lib/espelho.ts)
+async function trazerTarefas(sistema: Sistema) {
+  const db = clienteDo(sistema);
+  const { dataLoaded, areas } = useAppStore.getState();
+  if (!db || !dataLoaded) return;
+  const { criadas } = await espelharSistema(sistema, db, areas);
+  if (criadas > 0) {
+    const origem = sistema === 'basepro' ? 'da agenda do BasePro' : `dos chamados do ${configSistemas.nexo.nome}`;
+    toast.success(criadas === 1 ? `1 tarefa nova veio ${origem}` : `${criadas} tarefas novas vieram ${origem}`);
   }
 }
 

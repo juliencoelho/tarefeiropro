@@ -1,6 +1,6 @@
 // Regras de organização do dia: o que é de hoje, o que está na caixa de entrada,
 // o que merece atenção. Usadas pelas telas Hoje, Caixa de entrada e Áreas.
-import { Task, TaskPriority, TaskStatus, TaskType, User } from '../types';
+import { OrigemTarefa, Task, TaskLink, TaskPriority, TaskStatus, TaskType, User } from '../types';
 import { formatDateForInput } from './utils';
 
 // Datas comparadas como texto 'yyyy-MM-dd' no fuso local: evita o dia "pular"
@@ -40,6 +40,39 @@ export const rotuloTipo: Record<TaskType, string> = {
   tarefa: 'Tarefa',
   evento: 'Compromisso',
 };
+
+// De onde veio a tarefa (só as que nasceram fora do app)
+export const rotuloOrigem: Partial<Record<OrigemTarefa, string>> = {
+  cowork: 'Cowork',
+  basepro: 'Agenda do BasePro',
+  nexo: 'Chamado do Nexo',
+  email: 'E-mail',
+  todo: 'To Do',
+};
+
+// Vínculos de uma tarefa, do ponto de vista dela
+export interface Vinculo {
+  link: TaskLink;
+  outra: Task;
+  // complementa | esta depende da outra | a outra depende desta
+  sentido: 'complementa' | 'depende' | 'bloqueia';
+}
+
+export function vinculosDe(taskId: string, links: TaskLink[], tasks: Task[]): Vinculo[] {
+  const porId = new Map(tasks.map((t) => [t.id, t]));
+  const vinculos: Vinculo[] = [];
+  for (const link of links) {
+    if (link.taskId !== taskId && link.outraId !== taskId) continue;
+    const outra = porId.get(link.taskId === taskId ? link.outraId : link.taskId);
+    if (!outra) continue;
+    const sentido = link.tipo === 'complementa' ? 'complementa' : link.taskId === taskId ? 'depende' : 'bloqueia';
+    vinculos.push({ link, outra, sentido });
+  }
+  // Abertas primeiro; dentro delas, o que esta tarefa espera vem antes
+  const ordem = { depende: 0, complementa: 1, bloqueia: 2 };
+  return vinculos.sort((a, b) =>
+    Number(a.outra.status === 'feito') - Number(b.outra.status === 'feito') || ordem[a.sentido] - ordem[b.sentido]);
+}
 
 export const coresDeArea = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#64748b'];
 

@@ -1,6 +1,6 @@
 // Conversão entre as linhas do Supabase (snake_case, datas como texto)
 // e os tipos usados pelas telas (camelCase, Date).
-import { Area, Client, Comment, MonitoringItem, Subtask, Task, User } from '../types';
+import { Area, Client, Comment, MonitoringItem, Subtask, Task, TaskLink, User } from '../types';
 import { createLocalDate, formatDateForInput } from './utils';
 
 type Row = Record<string, any>;
@@ -55,6 +55,7 @@ export function rowToTask(row: Row, owner: User): Task {
     plannedFor: dayFromDb(row.planned_for),
     inInbox: row.in_inbox ?? false,
     source: row.source ?? 'app',
+    origemRef: row.origem_ref ?? undefined,
     assignedTo: row.assigned_to ?? [],
     createdBy: owner,
     createdAt: new Date(row.created_at),
@@ -91,6 +92,7 @@ const taskFieldToDb: Partial<Record<keyof Task, (value: any) => [string, unknown
   plannedFor: (v) => ['planned_for', dayToDb(v)],
   inInbox: (v) => ['in_inbox', v ?? false],
   source: (v) => ['source', v ?? 'app'],
+  origemRef: (v) => ['origem_ref', emptyToNull(v)],
   assignedTo: (v) => ['assigned_to', v ?? []],
   completedAt: (v) => ['completed_at', instantToDb(v)],
   subtasks: (v) => ['subtasks', v ?? []],
@@ -111,6 +113,16 @@ export function taskPatchToRow(patch: Partial<Task>): Row {
     row[column] = value;
   }
   return row;
+}
+
+export function rowToLink(row: Row): TaskLink {
+  return {
+    id: row.id,
+    taskId: row.task_id,
+    outraId: row.outra_id,
+    tipo: row.tipo,
+    createdAt: new Date(row.created_at),
+  };
 }
 
 export function rowToClient(row: Row): Client {

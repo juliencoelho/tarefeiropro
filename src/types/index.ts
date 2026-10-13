@@ -194,6 +194,20 @@ export interface Attachment {
   uploadedBy: User;
 }
 
+// app/cowork = criada aqui; basepro = agenda do BasePro; nexo = chamado de suporte do Nexo
+export type OrigemTarefa = 'app' | 'cowork' | 'basepro' | 'nexo' | 'email' | 'todo';
+
+// complementa = andam juntas; depende_de = taskId só deve ser feita depois de outraId
+export type TipoVinculo = 'complementa' | 'depende_de';
+
+export interface TaskLink {
+  id: string;
+  taskId: string;
+  outraId: string;
+  tipo: TipoVinculo;
+  createdAt: Date;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -213,7 +227,8 @@ export interface Task {
   contactId?: string;
   plannedFor?: Date; // Dia em que planejei fazer (tela Hoje) — diferente do prazo
   inInbox?: boolean; // Ainda na caixa de entrada, sem triagem
-  source?: 'app' | 'cowork'; // Quem criou a tarefa
+  source?: OrigemTarefa; // Quem criou a tarefa, ou de onde ela veio
+  origemRef?: string; // Id do item no lugar de origem (agenda do BasePro, chamado do Nexo, e-mail...)
   assignedTo: User[];
   createdBy: User;
   createdAt: Date;
