@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { AlarmClock, ArrowRight, CalendarClock, CalendarX, Inbox, Mail, Sun } from 'lucide-react';
+import { AlarmClock, ArrowRight, CalendarClock, CalendarX, Inbox, Mail, Sun, Unplug } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { TaskRow } from '../components/tasks/TaskRow';
 import { CampoRapido } from '../components/tasks/CampoRapido';
@@ -10,6 +10,8 @@ import { caixaDeEntrada, hojeStr, novaTarefa, organizarHoje } from '../lib/taref
 import { useItensMonitorados } from '../hooks/useItensMonitorados';
 import { LinhaMonitorada } from '../components/monitoramento/LinhaMonitorada';
 import { useEmails } from '../store/useEmails';
+import { useMonitoramento } from '../store/useMonitoramento';
+import { configSistemas, listaSistemas } from '../lib/sistemas';
 
 function HojePage() {
   const { tasks, currentUser, addTask, updateTask } = useAppStore();
@@ -19,6 +21,11 @@ function HojePage() {
   const paraCobrar = useItensMonitorados().grupos.atencao;
   const emailsAcao = useEmails((s) => s.emails.filter((e) => e.categoria === 'acao' && !e.lido && !e.tarefa_id).length);
   const totalDoDia = planejadas.length + concluidas.length;
+  // BasePro e Nexo fazem logout de todo mundo uma vez por dia; aqui o usuário percebe e reconecta
+  const { sistemas, verificado } = useMonitoramento();
+  const desconectados = verificado
+    ? listaSistemas.filter((s) => configSistemas[s].url && !sistemas[s].email).map((s) => configSistemas[s].nome)
+    : [];
 
   const dataPorExtenso = format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR });
 
@@ -31,6 +38,21 @@ function HojePage() {
           {totalDoDia > 0 && ` · ${concluidas.length} de ${totalDoDia} feitas`}
         </p>
       </header>
+
+      {desconectados.length > 0 && (
+        <Link
+          to="/configuracoes?aba=sistemas"
+          className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-sm text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-950/70 transition-colors"
+        >
+          <span className="inline-flex items-center gap-2">
+            <Unplug className="w-4 h-4 shrink-0" />
+            {desconectados.join(' e ')} {desconectados.length === 1 ? 'desconectado' : 'desconectados'}: as tarefas e o monitoramento de lá pararam de chegar.
+          </span>
+          <span className="inline-flex items-center gap-1 shrink-0 font-medium">
+            Reconectar <ArrowRight className="w-4 h-4" />
+          </span>
+        </Link>
+      )}
 
       {naCaixa > 0 && (
         <Link

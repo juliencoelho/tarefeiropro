@@ -16,6 +16,7 @@ interface EstadoSistema {
 interface MonitoramentoState {
   sistemas: Record<Sistema, EstadoSistema>;
   carregando: boolean;
+  verificado: boolean; // já leu os sistemas ao menos uma vez (antes disso, "sem email" não quer dizer desconectado)
   carregar: () => Promise<void>;
   conectar: (sistema: Sistema, email: string, senha: string) => Promise<string | null>;
   desconectar: (sistema: Sistema) => Promise<void>;
@@ -65,6 +66,7 @@ async function trazerTarefas(sistema: Sistema) {
 export const useMonitoramento = create<MonitoramentoState>((set, get) => ({
   sistemas: { basepro: vazio(), nexo: vazio() },
   carregando: false,
+  verificado: false,
 
   carregar: async () => {
     if (get().carregando) return;
@@ -73,6 +75,7 @@ export const useMonitoramento = create<MonitoramentoState>((set, get) => ({
     set({
       sistemas: Object.fromEntries(listaSistemas.map((s, i) => [s, resultados[i]])) as Record<Sistema, EstadoSistema>,
       carregando: false,
+      verificado: true,
     });
   },
 
