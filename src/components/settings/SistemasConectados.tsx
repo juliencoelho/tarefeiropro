@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { CheckCircle2, Loader2, Mail, Pause, Play, Plug, RefreshCw, Unplug } from 'lucide-react';
+import { CheckCircle2, ListTodo, Loader2, Mail, Pause, Play, Plug, RefreshCw, Unplug } from 'lucide-react';
 import { useEmails } from '../../store/useEmails';
 import { useMonitoramento } from '../../store/useMonitoramento';
 import { configSistemas, listaSistemas } from '../../lib/sistemas';
@@ -96,7 +96,7 @@ function CartaoSistema({ sistema }: { sistema: Sistema }) {
 
 // Hotmail pessoal: lido pelo robô no servidor (Microsoft Graph), sem senha guardada
 function CartaoEmail() {
-  const { contas, carregado, atualizando, conectar, atualizarAgora, pausar } = useEmails();
+  const { contas, carregado, atualizando, trazendoToDo, toDoPrecisaAutorizar, conectar, atualizarAgora, pausar, trazerToDo } = useEmails();
   const [conectando, setConectando] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -104,12 +104,17 @@ function CartaoEmail() {
   useEffect(() => {
     const resultado = searchParams.get('email');
     if (!resultado) return;
-    if (resultado === 'conectado') toast.success('Hotmail conectado. A primeira leitura leva alguns minutos.');
-    else toast.error(`Não consegui conectar: ${searchParams.get('motivo') ?? 'erro desconhecido'}`);
+    if (resultado === 'conectado') {
+      toast.success('Hotmail conectado. Os e-mails novos chegam em alguns minutos.');
+      // A mesma autorização libera o To Do: já traz as tarefas de lá
+      trazerToDo();
+    } else {
+      toast.error(`Não consegui conectar: ${searchParams.get('motivo') ?? 'erro desconhecido'}`);
+    }
     searchParams.delete('email');
     searchParams.delete('motivo');
     setSearchParams(searchParams, { replace: true });
-  }, [searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams, trazerToDo]);
 
   return (
     <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
@@ -152,7 +157,28 @@ function CartaoEmail() {
             >
               {conta.ativa ? <><Pause className="w-4 h-4" /> Pausar leitura</> : <><Play className="w-4 h-4" /> Retomar leitura</>}
             </button>
+            {toDoPrecisaAutorizar ? (
+              <button
+                onClick={() => conectar()}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"
+              >
+                <Plug className="w-4 h-4" /> Autorizar o To Do
+              </button>
+            ) : (
+              <button
+                onClick={() => trazerToDo()}
+                disabled={trazendoToDo}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50"
+              >
+                {trazendoToDo ? <Loader2 className="w-4 h-4 animate-spin" /> : <ListTodo className="w-4 h-4" />} Trazer tarefas do To Do
+              </button>
+            )}
           </div>
+          {toDoPrecisaAutorizar && (
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              Na página da Microsoft, aceite o novo pedido ("ler suas tarefas"). Depois volte aqui e clique em "Trazer tarefas do To Do".
+            </p>
+          )}
         </div>
       ))}
 

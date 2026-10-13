@@ -41,7 +41,10 @@ interface EmailsState {
   emails: Email[];
   carregado: boolean;
   atualizando: boolean;
+  trazendoToDo: boolean;
+  toDoPrecisaAutorizar: boolean;
   carregar: () => Promise<void>;
+  trazerToDo: () => Promise<void>;
   ouvir: () => () => void;
   conectar: () => Promise<void>;
   atualizarAgora: () => Promise<void>;
@@ -60,6 +63,29 @@ export const useEmails = create<EmailsState>((set, get) => ({
   emails: [],
   carregado: false,
   atualizando: false,
+  trazendoToDo: false,
+  toDoPrecisaAutorizar: false,
+
+  // Tarefas abertas do Microsoft To Do (mesma conta do Hotmail) entram no Tarefeiro uma vez
+  trazerToDo: async () => {
+    set({ trazendoToDo: true });
+    const { data, error } = await supabase.functions.invoke('todo-importar', { body: {} });
+    set({ trazendoToDo: false });
+    if (data?.precisaAutorizar) {
+      set({ toDoPrecisaAutorizar: true });
+      toast.error('Falta autorizar o To Do: clique em "Autorizar o To Do" e aceite na página da Microsoft.');
+      return;
+    }
+    if (error || data?.erro) {
+      toast.error(data?.erro ?? 'Não consegui ler o To Do.');
+      return;
+    }
+    set({ toDoPrecisaAutorizar: false });
+    const { criadas = 0, abertasNoToDo = 0 } = data ?? {};
+    if (criadas > 0) toast.success(criadas === 1 ? '1 tarefa veio do To Do' : `${criadas} tarefas vieram do To Do`);
+    else if (abertasNoToDo === 0) toast.success('Não há tarefas abertas no To Do');
+    else toast.success('Tudo o que está aberto no To Do já estava no Tarefeiro');
+  },
 
   carregar: async () => {
     const desde = new Date(Date.now() - DIAS_NA_TELA * 24 * 60 * 60 * 1000).toISOString();

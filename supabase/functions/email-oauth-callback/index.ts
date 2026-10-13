@@ -1,7 +1,7 @@
 // Retorno do login da Microsoft: troca o código por tokens, guarda o refresh token no Vault,
 // registra a conta e dispara a primeira leitura. Sempre devolve o usuário para o app.
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import { APP_URL, URL_FUNCOES, URL_RETORNO, mensagemDeErro, pedirToken, servidor } from '../_shared/microsoft.ts';
+import { APP_URL, ESCOPOS, URL_FUNCOES, URL_RETORNO, mensagemDeErro, pedirToken, servidor } from '../_shared/microsoft.ts';
 
 const VALIDADE_PEDIDO_MS = 15 * 60 * 1000;
 
@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
       return voltar({ email: 'erro', motivo: 'O pedido de conexão expirou. Tente de novo.' });
     }
 
-    const tokens = await pedirToken({ grant_type: 'authorization_code', code, redirect_uri: URL_RETORNO });
+    const tokens = await pedirToken({ grant_type: 'authorization_code', code, redirect_uri: URL_RETORNO }, ESCOPOS);
     if (!tokens.refresh_token) throw new Error('A Microsoft não devolveu acesso contínuo (offline_access)');
 
     const perfil = await fetch('https://graph.microsoft.com/v1.0/me?$select=displayName,mail,userPrincipalName', {

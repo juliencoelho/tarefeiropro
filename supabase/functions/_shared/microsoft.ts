@@ -4,7 +4,12 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 
 // Conta pessoal (Hotmail/Outlook.com) entra pelo endpoint /consumers
 export const AUTORIDADE = Deno.env.get('MS_AUTHORITY') ?? 'consumers';
-export const ESCOPOS = 'offline_access openid email User.Read Mail.ReadWrite';
+// Pedidos de token só com o que cada robô usa: o de e-mail continua funcionando
+// mesmo que o usuário ainda não tenha autorizado o To Do.
+export const ESCOPOS_EMAIL = 'offline_access openid email User.Read Mail.ReadWrite';
+export const ESCOPOS_TODO = 'offline_access Tasks.Read';
+// No login a pessoa autoriza tudo de uma vez
+export const ESCOPOS = `${ESCOPOS_EMAIL} Tasks.Read`;
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 export const URL_FUNCOES = `${SUPABASE_URL}/functions/v1`;
@@ -51,12 +56,12 @@ interface RespostaToken {
 }
 
 // Erros trazem só o código e a primeira linha da descrição da Microsoft: nunca tokens
-export async function pedirToken(params: Record<string, string>): Promise<RespostaToken> {
+export async function pedirToken(params: Record<string, string>, escopos = ESCOPOS_EMAIL): Promise<RespostaToken> {
   const { clientId, segredo } = credenciais();
   const res = await fetch(`https://login.microsoftonline.com/${AUTORIDADE}/oauth2/v2.0/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ client_id: clientId, client_secret: segredo, scope: ESCOPOS, ...params }),
+    body: new URLSearchParams({ client_id: clientId, client_secret: segredo, scope: escopos, ...params }),
   });
   const corpo = await res.json().catch(() => ({}));
   if (!res.ok) {
