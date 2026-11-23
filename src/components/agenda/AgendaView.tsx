@@ -10,6 +10,7 @@ import {
 import { useAppStore } from '../../store/useAppStore';
 import { AgendaView as AgendaViewType, Task } from '../../types';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, addDays, subDays, isSameDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export function AgendaView() {
   const { tasks, clients, agendaView, setAgendaView, setSelectedTask, setTaskModalOpen } = useAppStore();
@@ -171,8 +172,8 @@ export function AgendaView() {
             
             <h2 className="text-lg font-semibold text-slate-900 dark:text-white min-w-[200px] text-center">
               {agendaView === 'daily' 
-                ? format(currentDate, "EEEE, d 'de' MMMM")
-                : `${format(dateRange[0], 'd MMM')} - ${format(dateRange[6], 'd MMM yyyy')}`
+                ? format(currentDate, "EEEE, d 'de' MMMM", { locale: ptBR })
+                : `${format(dateRange[0], 'd MMM', { locale: ptBR })} - ${format(dateRange[6], 'd MMM yyyy', { locale: ptBR })}`
               }
             </h2>
             
@@ -209,14 +210,14 @@ export function AgendaView() {
                       isToday ? 'text-blue-600 dark:text-blue-400' : 'text-slate-900 dark:text-white'
                     }`}>
                       {agendaView === 'daily' 
-                        ? format(date, "EEEE")
-                        : format(date, "EEE")
+                        ? format(date, "EEEE", { locale: ptBR })
+                        : format(date, "EEE", { locale: ptBR })
                       }
                     </h3>
                     <p className={`text-sm ${
                       isToday ? 'text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-300'
                     }`}>
-                      {format(date, 'd MMM')}
+                      {format(date, 'd MMM', { locale: ptBR })}
                     </p>
                   </div>
                   <span className={`text-xs px-2 py-1 rounded-full ${

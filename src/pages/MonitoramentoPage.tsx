@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, AlarmClock, Plug, RefreshCw } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { useMonitoramento } from '../store/useMonitoramento';
@@ -7,22 +7,34 @@ import { useItensMonitorados } from '../hooks/useItensMonitorados';
 import { LinhaMonitorada } from '../components/monitoramento/LinhaMonitorada';
 import { CampoRapido } from '../components/tasks/CampoRapido';
 import { ListaVazia, Secao } from '../components/tasks/Secao';
-import { agrupar, brl, ItemMonitorado, totais } from '../lib/monitoramento';
+import {
+  agrupar, brl, DIAS_ATRASO_ANTIGO, ItemMonitorado, rotuloSecao, SecaoMonitorada, secaoDe, totais,
+} from '../lib/monitoramento';
 import { configSistemas, listaSistemas } from '../lib/sistemas';
 import { hojeStr } from '../lib/tarefas';
-import { Sistema, TipoMonitorado } from '../types';
+import { TipoMonitorado } from '../types';
 import { cn } from '../lib/utils';
 
 type FiltroTipo = 'todos' | TipoMonitorado;
-type FiltroOrigem = 'todas' | Sistema | 'manual';
 
-const filtrosTipo: { id: FiltroTipo; rotulo: string }[] = [
-  { id: 'todos', rotulo: 'Tudo' },
-  { id: 'conta_receber', rotulo: 'A receber' },
-  { id: 'empenho', rotulo: 'Empenhos' },
-  { id: 'nf_transito', rotulo: 'NFs' },
-  { id: 'aguardando_retorno', rotulo: 'Aguardando retorno' },
-];
+const secoes: SecaoMonitorada[] = ['hospicare', 'fernandes', 'retorno'];
+const ehSecao = (v: string | null): v is SecaoMonitorada => !!v && (secoes as string[]).includes(v);
+
+// Tipos que existem em cada seção (empenho só no Nexo)
+const filtrosTipo: Record<SecaoMonitorada, { id: FiltroTipo; rotulo: string }[]> = {
+  hospicare: [
+    { id: 'todos', rotulo: 'Tudo' },
+    { id: 'conta_receber', rotulo: 'A receber' },
+    { id: 'nf_transito', rotulo: 'NFs' },
+    { id: 'empenho', rotulo: 'Empenhos' },
+  ],
+  fernandes: [
+    { id: 'todos', rotulo: 'Tudo' },
+    { id: 'conta_receber', rotulo: 'Títulos' },
+    { id: 'nf_transito', rotulo: 'NFs' },
+  ],
+  retorno: [],
+};
 
 const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
 
@@ -50,15 +62,23 @@ function MonitoramentoPage() {
   const { addMonitoringItem } = useAppStore();
   const { sistemas, carregando, carregar } = useMonitoramento();
   const { ativos, dispensados } = useItensMonitorados();
+  const [params, setParams] = useSearchParams();
+  const secao: SecaoMonitorada = ehSecao(params.get('secao')) ? (params.get('secao') as SecaoMonitorada) : 'hospicare';
   const [tipo, setTipo] = useState<FiltroTipo>('todos');
-  const [origem, setOrigem] = useState<FiltroOrigem>('todas');
 
-  // Em "Tudo", empenho já faturado aparece como detalhe da NF/conta a receber, não de novo
-  const filtrados = ativos.filter(
-    (i) => (tipo === 'todos' ? !i.coberto : i.tipo === tipo) && (origem === 'todas' || i.origem === origem)
-  );
+  const trocarSecao = (s: SecaoMonitorada) => {
+    setTipo('todos');
+    setParams(s === 'hospicare' ? {} : { secao: s }, { replace: true });
+  };
+
+  const daSecao = ativos.filter((i) => secaoDe(i) === secao);
+  // Em "Tudo", empenho já faturado e a parcela de uma NF a entregar aparecem como detalhe
+  // de outra linha, não de novo
+  const filtrados = daSecao.filter((i) => (tipo === 'todos' ? !i.coberto : i.tipo === tipo));
   const grupos = agrupar(filtrados, hojeStr());
   const soma = totais(ativos);
+  const dispensadosDaSecao = dispensados.filter((i) => secaoDe(i) === secao);
+  const quantos = (s: SecaoMonitorada) => ativos.filter((i) => secaoDe(i) === s && !i.coberto).length;
   const desconectados = listaSistemas.filter((s) => !sistemas[s].email && !sistemas[s].erro);
   const comErro = listaSistemas.filter((s) => sistemas[s].erro);
   // O mais antigo entre os sistemas conectados: é o quão atual a tela está
@@ -119,32 +139,57 @@ function MonitoramentoPage() {
         </div>
       ))}
 
-      <div className="flex gap-3 overflow-x-auto sem-barra pb-1 -mx-4 px-4 md:mx-0 md:px-0 lg:grid lg:grid-cols-5 lg:overflow-visible">
-        <Cartao titulo="A receber · Hospicare" valor={brl.format(soma.receberNexo.valor)} detalhe={`${plural(soma.receberNexo.qtd, 'parcela em aberto', 'parcelas em aberto')} · Nexo`} />
-        <Cartao titulo="Títulos da Fernandes" valor={brl.format(soma.titulosBasePro.valor)} detalhe={`${plural(soma.titulosBasePro.qtd, 'parcela', 'parcelas')} · base da comissão · BasePro`} />
-        <Cartao titulo="Valor empenhado em aberto" valor={brl.format(soma.empenhos.valor)} detalhe={plural(soma.empenhos.qtd, 'empenho', 'empenhos')} />
-        <Cartao titulo="NFs a entregar" valor={String(soma.nfs.qtd)} detalhe={brl.format(soma.nfs.valor)} />
-        <Cartao titulo="Aguardando retorno" valor={String(soma.retorno.qtd)} detalhe="pessoas e respostas" />
+      {/* Uma aba por empresa: o dinheiro da Hospicare e os títulos da Fernandes nunca se misturam */}
+      <div role="tablist" className="flex gap-1 overflow-x-auto sem-barra border-b border-slate-200 dark:border-slate-700 -mx-4 px-4 md:mx-0 md:px-0">
+        {secoes.map((s) => (
+          <button
+            key={s}
+            role="tab"
+            aria-selected={secao === s}
+            onClick={() => trocarSecao(s)}
+            className={cn(
+              'shrink-0 whitespace-nowrap px-3 py-2 -mb-px border-b-2 text-sm font-medium transition-colors',
+              secao === s
+                ? 'border-blue-600 text-blue-700 dark:text-blue-300'
+                : 'border-transparent text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+            )}
+          >
+            {rotuloSecao[s].nome} <span className="font-normal text-slate-400 dark:text-slate-400">{quantos(s)}</span>
+          </button>
+        ))}
+      </div>
+      <p className="-mt-4 text-xs text-slate-500 dark:text-slate-300">{rotuloSecao[secao].explicacao}.</p>
+
+      <div className="flex gap-3 overflow-x-auto sem-barra pb-1 -mx-4 px-4 md:mx-0 md:px-0 lg:grid lg:grid-cols-3 lg:overflow-visible">
+        {secao === 'hospicare' && (
+          <>
+            <Cartao titulo="A receber da Hospicare" valor={brl.format(soma.receberNexo.valor)} detalhe={`${plural(soma.receberNexo.qtd, 'parcela em aberto', 'parcelas em aberto')} · Nexo`} />
+            <Cartao titulo="Valor empenhado em aberto" valor={brl.format(soma.empenhos.valor)} detalhe={plural(soma.empenhos.qtd, 'empenho', 'empenhos')} />
+            <Cartao titulo="NFs a entregar" valor={String(soma.nfsNexo.qtd)} detalhe={brl.format(soma.nfsNexo.valor)} />
+          </>
+        )}
+        {secao === 'fernandes' && (
+          <>
+            <Cartao titulo="Títulos da Fernandes" valor={brl.format(soma.titulosBasePro.valor)} detalhe={`${plural(soma.titulosBasePro.qtd, 'parcela', 'parcelas')} · base da comissão · BasePro`} />
+            <Cartao titulo="NFs a entregar" valor={String(soma.nfsBasePro.qtd)} detalhe={brl.format(soma.nfsBasePro.valor)} />
+          </>
+        )}
+        {secao === 'retorno' && (
+          <Cartao titulo="Aguardando retorno" valor={String(soma.retorno.qtd)} detalhe="pessoas e respostas" />
+        )}
       </div>
 
-      <div className="space-y-2">
+      {filtrosTipo[secao].length > 0 && (
         <div className="flex gap-1.5 overflow-x-auto sem-barra pb-1 md:flex-wrap md:overflow-visible">
-          {filtrosTipo.map((f) => (
+          {filtrosTipo[secao].map((f) => (
             <button key={f.id} onClick={() => setTipo(f.id)} className={chipFiltro(tipo === f.id)}>
               {f.rotulo}
             </button>
           ))}
         </div>
-        <div className="flex gap-1.5 overflow-x-auto sem-barra pb-1 md:flex-wrap md:overflow-visible">
-          {(['todas', ...listaSistemas, 'manual'] as FiltroOrigem[]).map((o) => (
-            <button key={o} onClick={() => setOrigem(o)} className={chipFiltro(origem === o)}>
-              {o === 'todas' ? 'Todas as origens' : o === 'manual' ? 'Manual' : configSistemas[o].nome}
-            </button>
-          ))}
-        </div>
-      </div>
+      )}
 
-      {(tipo === 'todos' || tipo === 'aguardando_retorno') && (
+      {secao === 'retorno' && (
         <CampoRapido
           placeholder="Aguardando retorno de quem?"
           onAdd={(title) =>
@@ -180,25 +225,38 @@ function MonitoramentoPage() {
               <Lista itens={grupos.depois} />
             </Secao>
           )}
+          {grupos.antigos.length > 0 && (
+            <details>
+              <summary className="cursor-pointer list-none px-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300 hover:text-slate-700 dark:hover:text-slate-100">
+                Atrasados há mais de {DIAS_ATRASO_ANTIGO} dias{' '}
+                <span className="font-normal normal-case tracking-normal">{grupos.antigos.length}</span>
+              </summary>
+              <p className="px-3 mt-1 text-xs text-slate-500 dark:text-slate-300">
+                Cobrança velha: decida se ainda cobra (marque "Cobrar em") ou dispense.
+              </p>
+              <Lista itens={grupos.antigos} />
+            </details>
+          )}
         </div>
       )}
 
-      {dispensados.length > 0 && (
+      {dispensadosDaSecao.length > 0 && (
         <details className="-mx-3">
           <summary className="cursor-pointer list-none px-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300 hover:text-slate-700 dark:hover:text-slate-100">
-            Dispensados <span className="font-normal normal-case tracking-normal">{dispensados.length}</span>
+            Dispensados <span className="font-normal normal-case tracking-normal">{dispensadosDaSecao.length}</span>
           </summary>
           <p className="px-3 mt-1 text-xs text-slate-500 dark:text-slate-300">
             Continuam em aberto no sistema, só não aparecem na lista. Use "Restaurar" para trazer de volta.
           </p>
-          <Lista itens={dispensados} />
+          <Lista itens={dispensadosDaSecao} />
         </details>
       )}
 
       <p className="text-xs text-slate-500 dark:text-slate-300">
         Os totais não se somam entre si. A receber da Hospicare (Nexo) é o que os clientes devem à sua empresa; títulos
         da Fernandes (BasePro) são o que os clientes devem à representada, e a sua comissão sai do que for pago; empenho
-        é o valor empenhado ainda não recebido; NFs é o valor das notas ainda não entregues.
+        é o valor empenhado ainda não recebido; NFs é o valor das notas ainda não entregues. Quando a mesma NF está a
+        entregar e a receber, aparece uma linha só, com os dois estados.
       </p>
     </div>
   );

@@ -1,4 +1,4 @@
-import { Bell, Search, Settings, User, Moon, Sun, Menu, LogOut, Inbox } from 'lucide-react';
+import { Search, Settings, User, Moon, Sun, Menu, LogOut, Inbox } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { supabase } from '../../lib/supabase';
@@ -66,12 +66,6 @@ export function Header() {
           ) : (
             <Moon className="w-5 h-5 text-slate-600 dark:text-slate-300" />
           )}
-        </button>
-
-        {/* Notifications */}
-        <button className="hidden sm:block p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors relative">
-          <Bell className="w-5 h-5 text-slate-600 dark:text-slate-300" />
-          <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full text-xs"></span>
         </button>
 
         {/* Settings */}

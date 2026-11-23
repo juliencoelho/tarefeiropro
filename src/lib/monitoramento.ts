@@ -20,6 +20,17 @@ export interface ItemMonitorado {
   // Fica no filtro Empenhos, mas sai da visão geral e das contagens de atenção.
   coberto?: boolean;
   anotacao?: MonitoringItem;
+  // Chave da NF (<sistema>|<id ou número>) para juntar a entrega e o recebimento numa linha só
+  nf?: string;
+  // Estados da mesma NF reunidos nesta linha (ex.: a entregar + a receber)
+  estados?: EstadoNf[];
+  // A Hospicare comprando da CF: é conta a pagar da Hospicare, não cobrança do Julien
+  compraPropria?: boolean;
+}
+
+export interface EstadoNf {
+  texto: string;
+  data?: string;
 }
 
 export const rotuloTipoMonitorado: Record<TipoMonitorado, string> = {
@@ -44,6 +55,10 @@ function maisDias(dia: string, dias: number): string {
 }
 
 
+// Cliente "Hospicare" no BasePro = a empresa do Julien comprando da representada
+const ehHospicare = (cliente?: string | null) => /hospicare/i.test(cliente ?? '');
+const COMPRA_PROPRIA = 'Compra da Hospicare na CF · a pagar, não é cobrança';
+
 function falhou(res: { error: { message: string } | null }, oQue: string) {
   if (res.error) throw new Error(`${oQue}: ${res.error.message}`);
 }
@@ -66,11 +81,16 @@ export async function buscarBasePro(db: SupabaseClient): Promise<ItemMonitorado[
   for (const nf of nfs.data ?? []) {
     if (nf.status === 'CANCELADA') continue;
     const ref = `invoices:${nf.id}`;
+    const compraPropria = ehHospicare(nf.client_name_snapshot);
     itens.push({
       chave: chaveDe('basepro', ref), origem: 'basepro', ref, tipo: 'nf_transito',
       titulo: `NF ${nf.invoice_number}`,
-      detalhe: nf.carrier_name ? `Venda · ${nf.carrier_name}` : 'Venda',
+      detalhe: compraPropria
+        ? `${COMPRA_PROPRIA}${nf.carrier_name ? ` · ${nf.carrier_name}` : ''}`
+        : nf.carrier_name ? `Venda · ${nf.carrier_name}` : 'Venda',
       cliente: nf.client_name_snapshot ?? undefined,
+      nf: nf.invoice_number ? `basepro|${nf.invoice_number}` : undefined,
+      compraPropria,
       valor: num(nf.total_value),
       ...(nf.delivery_forecast
         ? { data: nf.delivery_forecast, rotuloData: 'Previsão de entrega' }
@@ -81,11 +101,15 @@ export async function buscarBasePro(db: SupabaseClient): Promise<ItemMonitorado[
   for (const r of receber.data ?? []) {
     const ref = `accounts_receivable:${r.id}`;
     const saldo = num(r.balance) ?? (num(r.amount) ?? 0) - (num(r.received_amount) ?? 0);
+    const compraPropria = ehHospicare(r.client_name_snapshot);
+    const detalhes = [compraPropria && COMPRA_PROPRIA, r.status === 'PARCIAL' && 'Recebida em parte'].filter(Boolean);
     itens.push({
       chave: chaveDe('basepro', ref), origem: 'basepro', ref, tipo: 'conta_receber',
       titulo: `NF ${r.invoice_number_snapshot ?? '—'}${r.installment_number ? ` · parcela ${r.installment_number}` : ''}`,
-      detalhe: r.status === 'PARCIAL' ? 'Recebida em parte' : undefined,
+      detalhe: detalhes.length ? detalhes.join(' · ') : undefined,
       cliente: r.client_name_snapshot ?? undefined,
+      nf: r.invoice_number_snapshot ? `basepro|${r.invoice_number_snapshot}` : undefined,
+      compraPropria,
       valor: num(saldo),
       data: r.due_date ?? undefined,
       rotuloData: 'Vencimento',
@@ -141,6 +165,7 @@ export async function buscarNexo(db: SupabaseClient): Promise<ItemMonitorado[]> 
       titulo: `NF ${nf.numero_nf}`,
       detalhe: (nf.status_entrega === 'A_SEPARAR' ? 'Venda · a separar' : 'Venda · na fila de entrega') + doEmpenho(nf.id),
       cliente: nf.cliente_nome_snapshot ?? undefined,
+      nf: `nexo|${nf.id}`,
       valor: num(nf.valor_total),
       data: maisDias(nf.data_emissao, DIAS_ENTREGA_ESPERADA),
       rotuloData: `Emitida ${curta(nf.data_emissao)} · esperada até`,
@@ -179,6 +204,7 @@ export async function buscarNexo(db: SupabaseClient): Promise<ItemMonitorado[]> 
       titulo: t.descricao,
       detalhe: doEmpenho(t.venda_id).replace(/^ · /, '') || undefined,
       cliente: t.cliente_nome ?? undefined,
+      nf: t.venda_id ? `nexo|${t.venda_id}` : undefined,
       valor: num((num(t.valor) ?? 0) - (num(t.valor_pago) ?? 0)),
       data: t.data_vencimento ?? undefined,
       rotuloData: 'Vencimento',
@@ -298,21 +324,107 @@ export function combinar(externos: ItemMonitorado[], anotacoes: MonitoringItem[]
 export const dataDeAtencao = (item: ItemMonitorado): string =>
   diaDe(item.anotacao?.followUpOn) || item.data || '';
 
+// Atrasado há mais que isso sai da lista principal e fica recolhido no fim
+export const DIAS_ATRASO_ANTIGO = 90;
+
 export function agrupar(itens: ItemMonitorado[], hoje: string) {
   const emUmaSemana = diaDe(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+  const antigoAte = maisDias(hoje, -DIAS_ATRASO_ANTIGO);
   const porData = (a: ItemMonitorado, b: ItemMonitorado) =>
     (dataDeAtencao(a) || '9999').localeCompare(dataDeAtencao(b) || '9999');
 
   const atencao: ItemMonitorado[] = [];
   const semana: ItemMonitorado[] = [];
   const depois: ItemMonitorado[] = [];
+  const antigos: ItemMonitorado[] = [];
   for (const item of itens) {
     const d = dataDeAtencao(item);
-    if (d && d <= hoje) atencao.push(item);
+    if (d && d < antigoAte) antigos.push(item);
+    else if (d && d <= hoje) atencao.push(item);
     else if (d && d <= emUmaSemana) semana.push(item);
     else depois.push(item);
   }
-  return { atencao: atencao.sort(porData), semana: semana.sort(porData), depois: depois.sort(porData) };
+  return {
+    atencao: atencao.sort(porData),
+    semana: semana.sort(porData),
+    depois: depois.sort(porData),
+    antigos: antigos.sort(porData),
+  };
+}
+
+// ============ Mesma NF em dois estados ============
+// A NF que ainda não foi entregue e a parcela a receber dela contam a mesma história.
+// Fica uma linha só, com os dois estados; as outras ficam "cobertas" (saem da visão
+// geral e das contagens, mas continuam nos filtros por tipo e nos totais).
+const estadoDe = (i: ItemMonitorado): EstadoNf =>
+  i.tipo === 'nf_transito'
+    ? { texto: `A entregar${i.data ? ` · esperada até ${curta(i.data)}` : ''}`, data: i.data }
+    : {
+        texto: `A receber${i.valor !== undefined ? ` ${brl.format(i.valor)}` : ''}${i.data ? ` · vence ${curta(i.data)}` : ''}`,
+        data: i.data,
+      };
+
+export function unificarNotas(itens: ItemMonitorado[]): ItemMonitorado[] {
+  const porNf = new Map<string, ItemMonitorado[]>();
+  for (const i of itens) {
+    if (!i.nf || i.coberto || (i.tipo !== 'nf_transito' && i.tipo !== 'conta_receber')) continue;
+    porNf.set(i.nf, [...(porNf.get(i.nf) ?? []), i]);
+  }
+
+  const trocas = new Map<string, ItemMonitorado>();
+  for (const grupo of porNf.values()) {
+    const entrega = grupo.find((i) => i.tipo === 'nf_transito');
+    const parcelas = grupo.filter((i) => i.tipo === 'conta_receber');
+    if (!entrega || parcelas.length === 0) continue;
+
+    // Fica a linha que já tem "cobrar em"; senão a da entrega, que vem antes do pagamento
+    const principal = grupo.find((i) => i.anotacao?.followUpOn) ?? entrega;
+    const datas = grupo.map((i) => i.data).filter((d): d is string => !!d).sort();
+    trocas.set(principal.chave, {
+      ...principal,
+      estados: [entrega, ...parcelas].map(estadoDe),
+      // A data mais urgente das duas manda na posição da linha
+      data: datas[0] ?? principal.data,
+    });
+    for (const outro of grupo) if (outro !== principal) trocas.set(outro.chave, { ...outro, coberto: true });
+  }
+  return itens.map((i) => trocas.get(i.chave) ?? i);
+}
+
+// ============ Seções: cada empresa no seu lugar ============
+export type SecaoMonitorada = 'hospicare' | 'fernandes' | 'retorno';
+
+export const secaoDe = (i: ItemMonitorado): SecaoMonitorada =>
+  i.origem === 'nexo' ? 'hospicare' : i.origem === 'basepro' ? 'fernandes' : 'retorno';
+
+export const rotuloSecao: Record<SecaoMonitorada, { nome: string; explicacao: string }> = {
+  hospicare: { nome: 'Hospicare', explicacao: 'sua empresa: a receber, NFs a entregar e empenhos' },
+  fernandes: { nome: 'Cirúrgica Fernandes', explicacao: 'títulos e NFs da representada, base da comissão' },
+  retorno: { nome: 'Aguardando retorno', explicacao: 'pessoas e respostas que você está esperando' },
+};
+
+// ============ Cobrar hoje (tela Hoje) ============
+// Só o que vence agora: "cobrar em" até hoje, aguardando retorno vencido e item dos
+// sistemas vencido há no máximo 7 dias. O mais velho vira uma linha só, com link.
+export const DIAS_COBRAR_HOJE = 7;
+
+export function paraCobrarAgora(itens: ItemMonitorado[], hoje: string) {
+  const limite = maisDias(hoje, -DIAS_COBRAR_HOJE);
+  const agora: ItemMonitorado[] = [];
+  const antigos: ItemMonitorado[] = [];
+  for (const i of itens) {
+    if (i.coberto || i.compraPropria) continue;
+    const cobrarEm = diaDe(i.anotacao?.followUpOn);
+    if (cobrarEm) {
+      if (cobrarEm <= hoje) agora.push(i);
+      continue;
+    }
+    if (!i.data || i.data > hoje) continue;
+    if (i.origem === 'manual' || i.data >= limite) agora.push(i);
+    else antigos.push(i);
+  }
+  const porData = (a: ItemMonitorado, b: ItemMonitorado) => dataDeAtencao(a).localeCompare(dataDeAtencao(b));
+  return { agora: agora.sort(porData), antigos };
 }
 
 // Totais por tipo, nunca somados entre si: saldo a receber, valor empenhado
@@ -330,6 +442,8 @@ export function totais(itens: ItemMonitorado[]) {
     titulosBasePro: { valor: soma('conta_receber', 'basepro'), qtd: qtd('conta_receber', 'basepro') },
     empenhos: { valor: soma('empenho'), qtd: qtd('empenho') },
     nfs: { valor: soma('nf_transito'), qtd: qtd('nf_transito') },
+    nfsNexo: { valor: soma('nf_transito', 'nexo'), qtd: qtd('nf_transito', 'nexo') },
+    nfsBasePro: { valor: soma('nf_transito', 'basepro'), qtd: qtd('nf_transito', 'basepro') },
     retorno: { qtd: qtd('aguardando_retorno') },
   };
 }

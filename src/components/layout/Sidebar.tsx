@@ -1,10 +1,6 @@
 import { useState } from 'react';
 import {
-  LayoutDashboard,
-  Kanban,
-  List,
   Calendar,
-  Users,
   Settings,
   Plus,
   ChevronLeft,
@@ -19,19 +15,16 @@ import { Link, useLocation } from 'react-router-dom';
 import { cn } from '../../lib/utils';
 import { caixaDeEntrada, coresDeArea, pendenciasPorArea } from '../../lib/tarefas';
 import { useItensMonitorados } from '../../hooks/useItensMonitorados';
-import { useEmails } from '../../store/useEmails';
+import { pendentesDeAcao, useEmails } from '../../store/useEmails';
 
+// Kanban, Lista, Clientes e Painel saíram do menu em 23/11/2026 (telas sem uso);
+// as rotas continuam existindo para quem tiver o endereço.
 const menuItems = [
   { icon: Sun, label: 'Hoje', path: '/' },
   { icon: Inbox, label: 'Caixa de entrada', path: '/entrada' },
-  { icon: Radar, label: 'Monitoramento', path: '/monitoramento' },
   { icon: Mail, label: 'E-mails', path: '/emails' },
-  { icon: Calendar, label: 'Agenda', path: '/agenda' },
-  { icon: Kanban, label: 'Kanban', path: '/kanban' },
-  { icon: List, label: 'Lista', path: '/lista' },
-  { icon: Users, label: 'Clientes', path: '/clientes' },
-  { icon: LayoutDashboard, label: 'Painel', path: '/painel' },
-  { icon: Settings, label: 'Configurações', path: '/configuracoes' }
+  { icon: Radar, label: 'Monitoramento', path: '/monitoramento' },
+  { icon: Calendar, label: 'Agenda', path: '/agenda' }
 ];
 
 export function Sidebar() {
@@ -48,8 +41,8 @@ export function Sidebar() {
 
   const naCaixa = caixaDeEntrada(tasks).length;
   const paraCobrar = useItensMonitorados().grupos.atencao.length;
-  // E-mails que pedem ação e ainda não foram lidos nem viraram tarefa
-  const emailsPendentes = useEmails((s) => s.emails.filter((e) => e.categoria === 'acao' && !e.lido && !e.tarefa_id).length);
+  // E-mails que pedem ação e ainda não viraram tarefa (mesma conta da tela de E-mails)
+  const emailsPendentes = useEmails((s) => pendentesDeAcao(s.emails).length);
   const pendencias = pendenciasPorArea(tasks);
   const areasAtivas = areas.filter(a => !a.archived);
 
@@ -211,6 +204,21 @@ export function Sidebar() {
             />
           )}
         </div>
+
+        {/* Configurações fica por último, depois das áreas */}
+        <ul className="mt-6 space-y-1">
+          <li>
+            <Link
+              to="/configuracoes"
+              onClick={() => setMobileMenuOpen(false)}
+              className={linkClass(location.pathname === '/configuracoes')}
+              title={collapsed ? 'Configurações' : undefined}
+            >
+              <Settings className="w-5 h-5 flex-shrink-0" />
+              {!collapsed && <span className="font-medium flex-1">Configurações</span>}
+            </Link>
+          </li>
+        </ul>
       </nav>
 
       {/* Footer */}

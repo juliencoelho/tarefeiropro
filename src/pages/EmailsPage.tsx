@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ExternalLink, Hourglass, Inbox, ListPlus, Loader2, Paperclip, Plug, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppStore } from '../store/useAppStore';
-import { CategoriaEmail, Email, useEmails } from '../store/useEmails';
+import { agruparRepetidos, CategoriaEmail, GrupoEmail, grupoResolvido, useEmails } from '../store/useEmails';
 import { ListaVazia, Secao } from '../components/tasks/Secao';
 import { novaTarefa } from '../lib/tarefas';
 import { cn } from '../lib/utils';
@@ -24,10 +24,17 @@ function quando(iso: string | null): string {
     : d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 }
 
+function quandoCompleto(iso: string | null): string {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
 const botao =
   'inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors';
 
-function LinhaEmail({ email }: { email: Email }) {
+function LinhaEmail({ grupo }: { grupo: GrupoEmail }) {
+  const email = grupo.principal;
+  const outrasCopias = grupo.copias.slice(1);
   const { currentUser, addTask, addMonitoringItem } = useAppStore();
   const { mudarCategoria, marcarTarefa, criarRegraRemetente, lerCorpo } = useEmails();
   const [aberto, setAberto] = useState(false);
@@ -51,7 +58,7 @@ function LinhaEmail({ email }: { email: Email }) {
     const id = addTask(novaTarefa(email.assunto || '(sem assunto)', currentUser, {
       inInbox: true, description: descricao, source: 'email', origemRef: email.id,
     }));
-    marcarTarefa(email.id, id);
+    grupo.copias.forEach((c) => marcarTarefa(c.id, id));
     toast.success('Virou tarefa na caixa de entrada');
   };
 
@@ -68,7 +75,7 @@ function LinhaEmail({ email }: { email: Email }) {
   };
 
   const mudar = (categoria: CategoriaEmail) => {
-    mudarCategoria(email.id, categoria);
+    grupo.copias.forEach((c) => mudarCategoria(c.id, categoria));
     setMudando(false);
     if (email.de_endereco) {
       toast(`Movido para ${rotuloCategoria[categoria]}`, {
@@ -87,7 +94,17 @@ function LinhaEmail({ email }: { email: Email }) {
           </p>
           <span className="text-xs text-slate-500 dark:text-slate-300 shrink-0">{quando(email.recebido_em)}</span>
         </div>
-        <p className="text-sm text-slate-900 dark:text-slate-100 break-words">{email.assunto || '(sem assunto)'}</p>
+        <p className="text-sm text-slate-900 dark:text-slate-100 break-words">
+          {email.assunto || '(sem assunto)'}
+          {outrasCopias.length > 0 && (
+            <span
+              className="ml-1.5 align-middle text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200"
+              title="Chegou mais de uma vez com o mesmo assunto e remetente"
+            >
+              {grupo.copias.length}×
+            </span>
+          )}
+        </p>
         {!aberto && <p className="text-xs text-slate-500 dark:text-slate-300 line-clamp-1">{email.previa}</p>}
       </button>
 
@@ -98,6 +115,23 @@ function LinhaEmail({ email }: { email: Email }) {
               <Paperclip className="w-3.5 h-3.5" />
               {email.anexos.map((a) => a.nome).join(', ')}
             </p>
+          )}
+          {outrasCopias.length > 0 && (
+            <div className="text-xs text-slate-500 dark:text-slate-300">
+              Chegou {grupo.copias.length} vezes:
+              <ul className="mt-0.5 space-y-0.5">
+                {grupo.copias.map((c) => (
+                  <li key={c.id} className="flex items-center gap-2">
+                    <span>{quandoCompleto(c.recebido_em)}</span>
+                    {c.link_web && (
+                      <a href={c.link_web} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 text-blue-600 dark:text-blue-400 hover:underline">
+                        <ExternalLink className="w-3 h-3" /> abrir esta
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
           {/* Texto puro: conteúdo de fora nunca é renderizado como HTML */}
           <pre className="whitespace-pre-wrap break-words font-sans text-sm text-slate-700 dark:text-slate-200 max-h-80 overflow-y-auto rounded-lg bg-slate-50 dark:bg-slate-800 p-3">
@@ -157,8 +191,12 @@ function LinhaEmail({ email }: { email: Email }) {
 function EmailsPage() {
   const { contas, emails, carregado, atualizando, atualizarAgora } = useEmails();
   const ativas = contas.filter((c) => c.ativa);
-  const porCategoria = (c: CategoriaEmail) => emails.filter((e) => e.categoria === c);
-  const acao = porCategoria('acao');
+  // Repetidos (mesmo remetente e assunto) viram uma linha só, com "2×"
+  const porCategoria = (c: CategoriaEmail) => agruparRepetidos(emails.filter((e) => e.categoria === c));
+  const todosDeAcao = porCategoria('acao');
+  // A mesma conta do menu: pedem ação e ainda não viraram tarefa
+  const acao = todosDeAcao.filter((g) => !grupoResolvido(g));
+  const acaoResolvida = todosDeAcao.filter(grupoResolvido);
   const informativo = porCategoria('informativo');
   const descartavel = porCategoria('descartavel');
   const ultimaLeitura = ativas
@@ -219,20 +257,29 @@ function EmailsPage() {
         <div className="space-y-6 -mx-3">
           <Secao titulo="Precisa de ação" quantidade={acao.length} icone={<Inbox className="w-3.5 h-3.5" />}>
             {acao.length === 0 ? <ListaVazia>Nada pedindo ação.</ListaVazia> : (
-              <ul>{acao.map((e) => <LinhaEmail key={e.id} email={e} />)}</ul>
+              <ul>{acao.map((g) => <LinhaEmail key={g.principal.id} grupo={g} />)}</ul>
+            )}
+            {acaoResolvida.length > 0 && (
+              <details className="mt-1">
+                <summary className="cursor-pointer list-none px-3 py-1 text-xs text-slate-500 dark:text-slate-300 hover:text-slate-700 dark:hover:text-slate-100">
+                  Já viraram tarefa ({acaoResolvida.length})
+                </summary>
+                <ul className="mt-1">{acaoResolvida.map((g) => <LinhaEmail key={g.principal.id} grupo={g} />)}</ul>
+              </details>
             )}
           </Secao>
           {informativo.length > 0 && (
             <Secao titulo="Informativo" quantidade={informativo.length}>
-              <ul>{informativo.map((e) => <LinhaEmail key={e.id} email={e} />)}</ul>
+              <ul>{informativo.map((g) => <LinhaEmail key={g.principal.id} grupo={g} />)}</ul>
             </Secao>
           )}
           {descartavel.length > 0 && (
+            // Fica recolhido: propaganda não disputa atenção com o que pede ação
             <details>
               <summary className="cursor-pointer list-none px-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-300 hover:text-slate-700 dark:hover:text-slate-100">
-                Descartável <span className="font-normal normal-case tracking-normal">{descartavel.length}</span>
+                Propaganda e descartáveis ({descartavel.length})
               </summary>
-              <ul className="mt-1">{descartavel.map((e) => <LinhaEmail key={e.id} email={e} />)}</ul>
+              <ul className="mt-1">{descartavel.map((g) => <LinhaEmail key={g.principal.id} grupo={g} />)}</ul>
             </details>
           )}
         </div>

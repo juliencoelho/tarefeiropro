@@ -31,6 +31,35 @@ export interface Email {
   tarefa_id: string | null;
 }
 
+// O mesmo e-mail às vezes chega mais de uma vez (ex.: a CEMA reenviou cada cotação).
+// Agrupa por remetente + assunto dentro da mesma categoria: a linha mostra o mais recente
+// e diz quantas cópias há, sem esconder nenhuma.
+export interface GrupoEmail {
+  principal: Email;
+  copias: Email[]; // todas, a principal inclusive, da mais nova para a mais antiga
+}
+
+const chaveDoGrupo = (e: Email) =>
+  [e.categoria ?? '', (e.de_endereco ?? '').trim().toLowerCase(), (e.assunto ?? '').trim().toLowerCase()].join('|');
+
+export function agruparRepetidos(emails: Email[]): GrupoEmail[] {
+  const grupos = new Map<string, GrupoEmail>();
+  for (const e of emails) {
+    const chave = chaveDoGrupo(e);
+    const grupo = grupos.get(chave);
+    if (grupo) grupo.copias.push(e);
+    else grupos.set(chave, { principal: e, copias: [e] });
+  }
+  return [...grupos.values()];
+}
+
+// Um assunto está resolvido quando alguma cópia já virou tarefa
+export const grupoResolvido = (g: GrupoEmail) => g.copias.some((e) => !!e.tarefa_id);
+
+// "Precisa de ação" ainda não resolvido: a mesma conta no menu e na tela de E-mails
+export const pendentesDeAcao = (emails: Email[]) =>
+  agruparRepetidos(emails.filter((e) => e.categoria === 'acao')).filter((g) => !grupoResolvido(g));
+
 // Só os e-mails recentes da Entrada vão para a tela; o histórico completo fica no banco
 const DIAS_NA_TELA = 30;
 const CAMPOS =

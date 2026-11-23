@@ -105,7 +105,17 @@ export function LinhaMonitorada({ item, compacta }: Props) {
               </span>
             )}
             {!compacta && item.detalhe && <span>{item.detalhe}</span>}
-            {item.data && (
+            {item.estados ? (
+              // Mesma NF a entregar e a receber: os dois estados na mesma linha
+              item.estados.map((e) => (
+                <span
+                  key={e.texto}
+                  className={cn(!!e.data && e.data < hoje && !cobrarEm && 'text-red-600 dark:text-red-400 font-medium')}
+                >
+                  {e.texto}
+                </span>
+              ))
+            ) : item.data && (
               <span className={cn(vencido && !cobrarEm && 'text-red-600 dark:text-red-400 font-medium')}>
                 {item.rotuloData} {curta(item.data)}
               </span>
